@@ -83,3 +83,43 @@ Stage Summary:
 - Database re-seeded with demo data via Python seed script
 - All CRUD operations verified working
 - Dashboard API returning correct aggregated data
+
+---
+Task ID: 2-5
+Agent: Conversion Agent
+Task: Convert AutoTracker from server-side PWA to Capacitor native Android app using Dexie.js
+
+Work Log:
+- Created `/src/lib/db-client.ts` — Dexie database module with 5 IndexedDB tables (vehicles, maintenanceSchedules, maintenanceRecords, expenses, parts) and `generateId()` helper
+- Created `/src/lib/services.ts` — Full service layer replacing all 11 API routes with Dexie-based CRUD operations, dashboard aggregation, and `seedDemoData()` function
+- Created `/src/hooks/use-db.ts` — `useDbQuery<T>()` hook replacing fetch-based `useApi` hook, with deps array for re-fetching when dependencies change
+- Rewrote `dashboard-tab.tsx` — Replaced `useApi('/api/dashboard')` with `useDbQuery(getDashboardData)`, removed fetch calls
+- Rewrote `vehicles-tab.tsx` — Replaced `useApi('/api/vehicles')` with `useDbQuery(getVehicles)`, replaced `fetch DELETE` with `deleteVehicle()` service
+- Rewrote `maintenance-tab.tsx` — Replaced 3 `useApi` calls with `useDbQuery` + service functions, replaced delete fetch calls with `deleteMaintenanceSchedule()`/`deleteMaintenanceRecord()`
+- Rewrote `expenses-tab.tsx` — Replaced `useApi` with `useDbQuery`, replaced delete with `deleteExpense()` service
+- Rewrote `stats-tab.tsx` — Replaced all `useApi` calls with `useDbQuery` + service functions for expenses and maintenance records
+- Rewrote `add-vehicle-dialog.tsx` — Replaced `useApi` with `useDbQuery(getVehicles)`, replaced POST/PUT fetch with `createVehicle()`/`updateVehicle()`
+- Rewrote `add-expense-dialog.tsx` — Replaced `useApi` with `useDbQuery(getVehicles)`, replaced POST fetch with `createExpense()`
+- Rewrote `add-maintenance-dialog.tsx` — Replaced `useApi` with `useDbQuery`, replaced POST fetch with `createMaintenanceSchedule()`/`createMaintenanceRecord()`
+- Rewrote `add-part-dialog.tsx` — Replaced `useApi` with `useDbQuery`, replaced POST fetch with `createPart()`
+- Updated `page.tsx` — Added `useEffect(() => { seedDemoData() }, [])` for first-load seeding
+- Removed `/src/app/api/` directory entirely — no server-side API routes needed
+- Updated `next.config.ts` — Changed `output: 'standalone'` to `output: 'export'`, added `images: { unoptimized: true }`
+- Updated `package.json` — Simplified build script to just `next build`
+- Created `capacitor.config.ts` — Capacitor config with appId `com.autotracker.app`, webDir `out`, StatusBar and SplashScreen plugins
+- Built static export with `next build` — `out/` directory generated successfully
+- Added Capacitor Android platform with `npx cap add android`
+- Synced web assets with `npx cap sync`
+- Built APK with Gradle using `JAVA_HOME=/tmp/jdk-21.0.11+10` — BUILD SUCCESSFUL in 49s
+- Copied APK to `/home/z/my-project/AutoTracker.apk` (4.8MB) and `/home/z/my-project/download/AutoTracker.apk`
+- All lint checks pass (0 errors, 0 warnings)
+- Dev server running without compilation errors
+
+Stage Summary:
+- App fully converted from server-side PWA (Prisma + SQLite + API routes) to client-side offline app (Dexie.js + IndexedDB)
+- Zero server API calls — all data operations happen client-side via IndexedDB
+- Static export (out/) works as Capacitor webDir
+- Android APK built successfully (4.8MB debug APK)
+- Demo data seeds on first load via Dexie
+- All existing visual design preserved (emerald theme, bottom nav, cards, charts)
+- All UI text still in Russian

@@ -43,19 +43,16 @@ prisma/migrations/
 *.swp
 *.swo
 
-# Android build artifacts
-twa-project/obj/
-twa-project/bin/
-twa-project/gen/
-twa-project/apk_build/
-twa-project/keystore.jks
-twa-project/build/
-twa-project/.gradle/
-twa-project/app/build/
-twa-project/local.properties
+# Android
+android/app/build/
+android/.gradle/
+android/local.properties
+twa-project/
+*.idsig
 
-# SDK
+# SDK & temp
 /tmp/
+agent-ctx/
 
 # Z scripts
 .zscripts/

@@ -1,7 +1,15 @@
 'use client'
 
 import { useAppStore } from '@/components/app-store'
-import { useApi } from '@/hooks/use-api'
+import { useDbQuery } from '@/hooks/use-db'
+import {
+  getVehicles as getVehiclesService,
+  getMaintenanceSchedules as getSchedulesService,
+  createMaintenanceSchedule,
+  createMaintenanceRecord,
+  type Vehicle,
+  type MaintenanceSchedule,
+} from '@/lib/services'
 import {
   Dialog,
   DialogContent,
@@ -22,19 +30,6 @@ import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { Wrench, Calendar } from 'lucide-react'
 
-interface Vehicle {
-  id: string
-  name: string
-  brand: string
-  model: string
-}
-
-interface MaintenanceSchedule {
-  id: string
-  name: string
-  vehicleId: string
-}
-
 export function AddMaintenanceDialog() {
   const {
     addMaintenanceScheduleOpen,
@@ -44,8 +39,8 @@ export function AddMaintenanceDialog() {
     selectedVehicleId,
   } = useAppStore()
 
-  const { data: vehicles } = useApi<Vehicle[]>('/api/vehicles')
-  const { data: schedules } = useApi<MaintenanceSchedule[]>('/api/maintenance-schedules')
+  const { data: vehicles } = useDbQuery<Vehicle[]>(() => getVehiclesService())
+  const { data: schedules } = useDbQuery<MaintenanceSchedule[]>(() => getSchedulesService())
 
   const isSchedule = addMaintenanceScheduleOpen
   const isOpen = addMaintenanceScheduleOpen || addMaintenanceRecordOpen
@@ -101,12 +96,7 @@ export function AddMaintenanceDialog() {
 
     setSaving(true)
     try {
-      const res = await fetch('/api/maintenance-schedules', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(scheduleForm),
-      })
-      if (!res.ok) throw new Error()
+      await createMaintenanceSchedule(scheduleForm)
       toast.success('Расписание создано')
       handleClose()
     } catch {
@@ -125,12 +115,7 @@ export function AddMaintenanceDialog() {
 
     setSaving(true)
     try {
-      const res = await fetch('/api/maintenance-records', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(recordForm),
-      })
-      if (!res.ok) throw new Error()
+      await createMaintenanceRecord(recordForm)
       toast.success('Запись ТО добавлена')
       handleClose()
     } catch {

@@ -1,7 +1,8 @@
 'use client'
 
 import { useAppStore } from '@/components/app-store'
-import { useApi } from '@/hooks/use-api'
+import { useDbQuery } from '@/hooks/use-db'
+import { getVehicles as getVehiclesService, createExpense, type Vehicle } from '@/lib/services'
 import {
   Dialog,
   DialogContent,
@@ -22,13 +23,6 @@ import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { Receipt } from 'lucide-react'
 
-interface Vehicle {
-  id: string
-  name: string
-  brand: string
-  model: string
-}
-
 const expenseCategories = [
   { value: 'parts', label: 'Запчасти' },
   { value: 'fuel', label: 'Топливо' },
@@ -41,7 +35,7 @@ const expenseCategories = [
 
 export function AddExpenseDialog() {
   const { addExpenseOpen, setAddExpenseOpen, selectedVehicleId } = useAppStore()
-  const { data: vehicles } = useApi<Vehicle[]>('/api/vehicles')
+  const { data: vehicles } = useDbQuery<Vehicle[]>(() => getVehiclesService())
 
   const [form, setForm] = useState({
     vehicleId: '',
@@ -76,12 +70,7 @@ export function AddExpenseDialog() {
 
     setSaving(true)
     try {
-      const res = await fetch('/api/expenses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      })
-      if (!res.ok) throw new Error()
+      await createExpense(form)
       toast.success('Расход добавлен')
       handleClose()
     } catch {

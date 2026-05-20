@@ -1,6 +1,16 @@
 'use client'
 
-import { useApi } from '@/hooks/use-api'
+import { useDbQuery } from '@/hooks/use-db'
+import {
+  getVehicles as getVehiclesService,
+  getMaintenanceSchedules as getSchedulesService,
+  getMaintenanceRecords as getRecordsService,
+  deleteMaintenanceSchedule,
+  deleteMaintenanceRecord,
+  type Vehicle,
+  type MaintenanceSchedule,
+  type MaintenanceRecord,
+} from '@/lib/services'
 import { useAppStore } from '@/components/app-store'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -26,41 +36,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 import { useState } from 'react'
 
-interface Vehicle {
-  id: string
-  name: string
-  brand: string
-  model: string
-}
-
-interface MaintenanceSchedule {
-  id: string
-  vehicleId: string
-  name: string
-  description: string
-  intervalMileage: number
-  intervalMonths: number
-  lastDate: string | null
-  lastMileage: number
-  nextDate: string | null
-  nextMileage: number
-  isActive: boolean
-  vehicle: Vehicle
-}
-
-interface MaintenanceRecord {
-  id: string
-  vehicleId: string
-  date: string
-  mileage: number
-  cost: number
-  description: string
-  workshop: string
-  vehicle: Vehicle
-  schedule: { id: string; name: string } | null
-}
-
-function formatDate(dateStr: string) {
+function formatDate(dateStr: string | Date) {
   return new Date(dateStr).toLocaleDateString('ru-RU', {
     day: 'numeric',
     month: 'short',
@@ -76,7 +52,7 @@ function formatAmount(amount: number) {
   }).format(amount)
 }
 
-function getScheduleStatus(nextDate: string | null) {
+function getScheduleStatus(nextDate: string | Date | null) {
   if (!nextDate) return { label: 'Не задано', variant: 'secondary' as const, icon: Clock, color: 'text-gray-500' }
   const now = new Date()
   const next = new Date(nextDate)
@@ -89,25 +65,24 @@ function getScheduleStatus(nextDate: string | null) {
 
 export function MaintenanceTab() {
   const { selectedVehicleId, setSelectedVehicleId, setAddMaintenanceScheduleOpen, setAddMaintenanceRecordOpen } = useAppStore()
-  const { data: vehicles, loading: vehiclesLoading } = useApi<Vehicle[]>('/api/vehicles')
+  const { data: vehicles, loading: vehiclesLoading } = useDbQuery<Vehicle[]>(() => getVehiclesService())
 
-  const scheduleUrl = selectedVehicleId
-    ? `/api/maintenance-schedules?vehicleId=${selectedVehicleId}`
-    : '/api/maintenance-schedules'
-  const recordsUrl = selectedVehicleId
-    ? `/api/maintenance-records?vehicleId=${selectedVehicleId}`
-    : '/api/maintenance-records'
+  const { data: schedules, loading: schedulesLoading, refresh: refreshSchedules } = useDbQuery<MaintenanceSchedule[]>(
+    () => getSchedulesService(selectedVehicleId || undefined),
+    [selectedVehicleId]
+  )
 
-  const { data: schedules, loading: schedulesLoading, refresh: refreshSchedules } = useApi<MaintenanceSchedule[]>(scheduleUrl)
-  const { data: records, loading: recordsLoading, refresh: refreshRecords } = useApi<MaintenanceRecord[]>(recordsUrl)
+  const { data: records, loading: recordsLoading, refresh: refreshRecords } = useDbQuery<MaintenanceRecord[]>(
+    () => getRecordsService(selectedVehicleId || undefined),
+    [selectedVehicleId]
+  )
 
   const [activeSection, setActiveSection] = useState<'schedules' | 'records'>('schedules')
 
   const handleDeleteSchedule = async (id: string) => {
     if (!confirm('Удалить расписание ТО?')) return
     try {
-      const res = await fetch(`/api/maintenance-schedules/${id}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error()
+      await deleteMaintenanceSchedule(id)
       toast.success('Расписание удалено')
       refreshSchedules()
     } catch {
@@ -118,14 +93,23 @@ export function MaintenanceTab() {
   const handleDeleteRecord = async (id: string) => {
     if (!confirm('Удалить запись ТО?')) return
     try {
-      const res = await fetch(`/api/maintenance-records/${id}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error()
+      await deleteMaintenanceRecord(id)
       toast.success('Запись удалена')
       refreshRecords()
     } catch {
       toast.error('Ошибка удаления')
     }
   }
+
+  // Build vehicle lookup map
+  const vehicleMap = vehicles
+    ? Object.fromEntries(vehicles.map(v => [v.id, v]))
+    : {}
+
+  // Build schedule lookup map
+  const scheduleMap = schedules
+    ? Object.fromEntries(schedules.map(s => [s.id, s]))
+    : {}
 
   const isLoading = vehiclesLoading || schedulesLoading || recordsLoading
 
@@ -211,6 +195,7 @@ export function MaintenanceTab() {
                 {schedules.map((schedule) => {
                   const status = getScheduleStatus(schedule.nextDate)
                   const StatusIcon = status.icon
+                  const vehicle = vehicleMap[schedule.vehicleId]
                   return (
                     <Card key={schedule.id} className="border-0 shadow-sm">
                       <CardContent className="p-3.5">
@@ -221,7 +206,7 @@ export function MaintenanceTab() {
                               <h4 className="font-medium text-sm truncate">{schedule.name}</h4>
                             </div>
                             <p className="text-xs text-muted-foreground mt-1">
-                              {!selectedVehicleId && `${schedule.vehicle.brand} ${schedule.vehicle.model} · `}
+                              {!selectedVehicleId && vehicle && `${vehicle.brand} ${vehicle.model} · `}
                               {schedule.intervalMileage > 0 && `каждые ${schedule.intervalMileage} км`}
                               {schedule.intervalMileage > 0 && schedule.intervalMonths > 0 && ' / '}
                               {schedule.intervalMonths > 0 && `каждые ${schedule.intervalMonths} мес.`}
@@ -275,40 +260,44 @@ export function MaintenanceTab() {
               </div>
             ) : (
               <div className="space-y-2">
-                {records.map((record) => (
-                  <Card key={record.id} className="border-0 shadow-sm">
-                    <CardContent className="p-3.5">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-sm">
-                            {record.schedule?.name || 'ТО'}
-                          </h4>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {!selectedVehicleId && `${record.vehicle.brand} ${record.vehicle.model} · `}
-                            {formatDate(record.date)} · {new Intl.NumberFormat('ru-RU').format(record.mileage)} км
-                          </p>
-                          {record.workshop && (
-                            <p className="text-xs text-muted-foreground">🔧 {record.workshop}</p>
-                          )}
-                          {record.description && (
-                            <p className="text-xs text-muted-foreground mt-0.5">{record.description}</p>
-                          )}
+                {records.map((record) => {
+                  const vehicle = vehicleMap[record.vehicleId]
+                  const schedule = record.scheduleId ? scheduleMap[record.scheduleId] : null
+                  return (
+                    <Card key={record.id} className="border-0 shadow-sm">
+                      <CardContent className="p-3.5">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-sm">
+                              {schedule?.name || 'ТО'}
+                            </h4>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {!selectedVehicleId && vehicle && `${vehicle.brand} ${vehicle.model} · `}
+                              {formatDate(record.date)} · {new Intl.NumberFormat('ru-RU').format(record.mileage)} км
+                            </p>
+                            {record.workshop && (
+                              <p className="text-xs text-muted-foreground">🔧 {record.workshop}</p>
+                            )}
+                            {record.description && (
+                              <p className="text-xs text-muted-foreground mt-0.5">{record.description}</p>
+                            )}
+                          </div>
+                          <div className="flex flex-col items-end gap-1 ml-2">
+                            <span className="text-sm font-semibold">{formatAmount(record.cost)}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                              onClick={() => handleDeleteRecord(record.id)}
+                            >
+                              ×
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex flex-col items-end gap-1 ml-2">
-                          <span className="text-sm font-semibold">{formatAmount(record.cost)}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                            onClick={() => handleDeleteRecord(record.id)}
-                          >
-                            ×
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  )
+                })}
               </div>
             )}
           </>

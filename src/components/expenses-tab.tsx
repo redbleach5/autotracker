@@ -1,10 +1,16 @@
 'use client'
 
-import { useApi } from '@/hooks/use-api'
+import { useDbQuery } from '@/hooks/use-db'
+import {
+  getVehicles as getVehiclesService,
+  getExpenses as getExpensesService,
+  deleteExpense as deleteExpenseService,
+  type Vehicle,
+  type Expense,
+} from '@/lib/services'
 import { useAppStore } from '@/components/app-store'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Select,
@@ -17,7 +23,6 @@ import {
   Receipt,
   Plus,
   Fuel,
-  Car,
   Shield,
   AlertCircle,
   Droplets,
@@ -28,24 +33,6 @@ import {
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 import { useState, useMemo } from 'react'
-
-interface Vehicle {
-  id: string
-  name: string
-  brand: string
-  model: string
-}
-
-interface Expense {
-  id: string
-  vehicleId: string
-  category: string
-  amount: number
-  date: string
-  description: string
-  supplier: string
-  vehicle: Vehicle
-}
 
 const categories = [
   { id: 'all', label: 'Все', icon: Receipt },
@@ -88,7 +75,7 @@ const categoryColors: Record<string, string> = {
   other: 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400',
 }
 
-function formatDate(dateStr: string) {
+function formatDate(dateStr: string | Date) {
   return new Date(dateStr).toLocaleDateString('ru-RU', {
     day: 'numeric',
     month: 'short',
@@ -105,15 +92,19 @@ function formatAmount(amount: number) {
 
 export function ExpensesTab() {
   const { selectedVehicleId, setSelectedVehicleId, setAddExpenseOpen } = useAppStore()
-  const { data: vehicles, loading: vehiclesLoading } = useApi<Vehicle[]>('/api/vehicles')
+  const { data: vehicles, loading: vehiclesLoading } = useDbQuery<Vehicle[]>(() => getVehiclesService())
 
   const [activeCategory, setActiveCategory] = useState('all')
 
-  const expenseUrl = selectedVehicleId
-    ? `/api/expenses?vehicleId=${selectedVehicleId}`
-    : '/api/expenses'
+  const { data: expenses, loading: expensesLoading, refresh: refreshExpenses } = useDbQuery<Expense[]>(
+    () => getExpensesService(selectedVehicleId || undefined),
+    [selectedVehicleId]
+  )
 
-  const { data: expenses, loading: expensesLoading, refresh: refreshExpenses } = useApi<Expense[]>(expenseUrl)
+  // Build vehicle lookup map
+  const vehicleMap = vehicles
+    ? Object.fromEntries(vehicles.map(v => [v.id, v]))
+    : {}
 
   const filteredExpenses = useMemo(() => {
     if (!expenses) return []
@@ -128,8 +119,7 @@ export function ExpensesTab() {
   const handleDelete = async (id: string) => {
     if (!confirm('Удалить расход?')) return
     try {
-      const res = await fetch(`/api/expenses/${id}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error()
+      await deleteExpenseService(id)
       toast.success('Расход удалён')
       refreshExpenses()
     } catch {
@@ -222,6 +212,7 @@ export function ExpensesTab() {
             {filteredExpenses.map((expense) => {
               const Icon = categoryIcons[expense.category] || HelpCircle
               const colorClass = categoryColors[expense.category] || categoryColors.other
+              const vehicle = vehicleMap[expense.vehicleId]
               return (
                 <Card key={expense.id} className="border-0 shadow-sm">
                   <CardContent className="p-3">
@@ -234,7 +225,7 @@ export function ExpensesTab() {
                           {categoryLabels[expense.category] || expense.category}
                         </p>
                         <p className="text-xs text-muted-foreground truncate">
-                          {!selectedVehicleId && `${expense.vehicle.brand} ${expense.vehicle.model} · `}
+                          {!selectedVehicleId && vehicle && `${vehicle.brand} ${vehicle.model} · `}
                           {formatDate(expense.date)}
                           {expense.description && ` · ${expense.description}`}
                         </p>

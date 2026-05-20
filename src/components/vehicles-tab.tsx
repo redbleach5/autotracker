@@ -1,6 +1,7 @@
 'use client'
 
-import { useApi } from '@/hooks/use-api'
+import { useDbQuery } from '@/hooks/use-db'
+import { getVehicles, deleteVehicle as deleteVehicleService, type Vehicle } from '@/lib/services'
 import { useAppStore } from '@/components/app-store'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -25,26 +26,6 @@ import {
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 
-interface Vehicle {
-  id: string
-  name: string
-  brand: string
-  model: string
-  year: number
-  vin: string
-  licensePlate: string
-  currentMileage: number
-  color: string
-  fuelType: string
-  imageUrl: string
-  createdAt: string
-  _count: {
-    expenses: number
-    maintenanceRecords: number
-    parts: number
-  }
-}
-
 const fuelTypeLabels: Record<string, string> = {
   petrol: 'Бензин',
   diesel: 'Дизель',
@@ -58,14 +39,13 @@ function formatMileage(km: number) {
 }
 
 export function VehiclesTab() {
-  const { data, loading, refresh } = useApi<Vehicle[]>('/api/vehicles')
+  const { data, loading, refresh } = useDbQuery<Vehicle[]>(() => getVehicles())
   const { selectedVehicleId, setSelectedVehicleId, setAddVehicleOpen, setEditVehicleId, setActiveTab } = useAppStore()
 
   const handleDelete = async (id: string) => {
     if (!confirm('Удалить транспортное средство? Все связанные данные будут удалены.')) return
     try {
-      const res = await fetch(`/api/vehicles/${id}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error()
+      await deleteVehicleService(id)
       toast.success('Транспорт удалён')
       if (selectedVehicleId === id) setSelectedVehicleId(null)
       refresh()
@@ -123,6 +103,7 @@ export function VehiclesTab() {
           <div className="space-y-3">
             {data.map((vehicle) => {
               const isSelected = selectedVehicleId === vehicle.id
+              const counts = (vehicle as any)._count as { expenses: number; maintenanceRecords: number; parts: number }
               return (
                 <motion.div
                   key={vehicle.id}
@@ -214,13 +195,13 @@ export function VehiclesTab() {
                           </div>
                           <div className="flex flex-wrap gap-1.5 pt-1">
                             <Badge variant="secondary" className="text-[10px]">
-                              💰 {vehicle._count.expenses} расходов
+                              💰 {counts?.expenses || 0} расходов
                             </Badge>
                             <Badge variant="secondary" className="text-[10px]">
-                              🔧 {vehicle._count.maintenanceRecords} ТО
+                              🔧 {counts?.maintenanceRecords || 0} ТО
                             </Badge>
                             <Badge variant="secondary" className="text-[10px]">
-                              ⚙️ {vehicle._count.parts} запчастей
+                              ⚙️ {counts?.parts || 0} запчастей
                             </Badge>
                           </div>
                           <div className="flex gap-2 pt-1">
