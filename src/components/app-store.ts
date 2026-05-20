@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { ReleaseInfo } from '@/lib/update-service'
+import type { ReleaseInfo, DownloadProgress, DownloadState } from '@/lib/update-service'
 
 export type TabId = 'dashboard' | 'vehicles' | 'maintenance' | 'expenses' | 'stats'
 
@@ -26,6 +26,11 @@ interface AppState {
   lastUpdateCheck: string | null
   updateDialogOpen: boolean
 
+  // Download state
+  downloadProgress: DownloadProgress | null
+  downloadState: DownloadState
+  downloadedFilePath: string | null
+
   // Actions
   setActiveTab: (tab: TabId) => void
   setSelectedVehicleId: (id: string | null) => void
@@ -44,6 +49,12 @@ interface AppState {
   dismissUpdate: () => void
   setLastUpdateCheck: (date: string) => void
   setUpdateDialogOpen: (open: boolean) => void
+
+  // Download actions
+  setDownloadProgress: (progress: DownloadProgress | null) => void
+  setDownloadState: (state: DownloadState) => void
+  setDownloadedFilePath: (path: string | null) => void
+  resetDownloadState: () => void
 }
 
 export const useAppStore = create<AppState>()(
@@ -70,6 +81,11 @@ export const useAppStore = create<AppState>()(
       lastUpdateCheck: null,
       updateDialogOpen: false,
 
+      // Download state
+      downloadProgress: null,
+      downloadState: 'idle' as DownloadState,
+      downloadedFilePath: null,
+
       // Actions
       setActiveTab: (tab) => set({ activeTab: tab }),
       setSelectedVehicleId: (id) => set({ selectedVehicleId: id }),
@@ -92,6 +108,16 @@ export const useAppStore = create<AppState>()(
       dismissUpdate: () => set({ updateDismissed: true, updateDialogOpen: false }),
       setLastUpdateCheck: (date) => set({ lastUpdateCheck: date }),
       setUpdateDialogOpen: (open) => set({ updateDialogOpen: open }),
+
+      // Download actions
+      setDownloadProgress: (progress) => set({ downloadProgress: progress }),
+      setDownloadState: (state) => set({ downloadState: state }),
+      setDownloadedFilePath: (path) => set({ downloadedFilePath: path }),
+      resetDownloadState: () => set({
+        downloadProgress: null,
+        downloadState: 'idle' as DownloadState,
+        downloadedFilePath: null,
+      }),
     }),
     {
       name: 'autotracker-settings',

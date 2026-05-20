@@ -9,14 +9,15 @@ import { checkForUpdate, shouldCheckForUpdate } from '@/lib/update-service'
  *
  * - Проверяет при первом запуске
  * - Повторяет проверку каждые 4 часа
- * - Учитывает отложенные обновления
  * - Показывает уведомление при наличии обновления
+ * - Критические обновления показывают диалог сразу
  */
 export function useUpdateChecker() {
   const {
     updateAvailable,
     updateDismissed,
     lastUpdateCheck,
+    downloadState,
     setUpdateAvailable,
     setLastUpdateCheck,
     setUpdateDialogOpen,
@@ -26,6 +27,9 @@ export function useUpdateChecker() {
 
   const performCheck = useCallback(async (force = false) => {
     if (isChecking.current) return
+
+    // Не проверяем, если сейчас скачивается или устанавливается обновление
+    if (downloadState === 'downloading' || downloadState === 'installing') return
 
     // Если обновление уже доступно и не отклонено — не проверяем повторно
     if (updateAvailable && !updateDismissed && !force) return
@@ -54,18 +58,18 @@ export function useUpdateChecker() {
     } finally {
       isChecking.current = false
     }
-  }, [updateAvailable, updateDismissed, lastUpdateCheck, setUpdateAvailable, setLastUpdateCheck, setUpdateDialogOpen])
+  }, [updateAvailable, updateDismissed, lastUpdateCheck, downloadState, setUpdateAvailable, setLastUpdateCheck, setUpdateDialogOpen])
 
   // Проверка при монтировании
   useEffect(() => {
     performCheck()
   }, [performCheck])
 
-  // Периодическая проверка каждые 30 минут (для активной сессии)
+  // Периодическая проверка каждые 30 минут
   useEffect(() => {
     const interval = setInterval(() => {
       performCheck()
-    }, 30 * 60 * 1000) // 30 минут
+    }, 30 * 60 * 1000)
 
     return () => clearInterval(interval)
   }, [performCheck])
