@@ -115,3 +115,57 @@ Stage Summary:
 - Parts categories expanded and UI improved
 - Professional AI-generated app logo applied to all platforms
 - APK rebuilt and uploaded to GitHub
+
+---
+Task ID: 10
+Agent: Main Agent
+Task: Implement comprehensive app update system
+
+Work Log:
+- Created public/version.json — app version configuration file
+- Created src/lib/update-service.ts — full update service with GitHub Releases API integration
+  - Semver comparison (compareVersions)
+  - Release parsing with changelog extraction
+  - APK asset detection and download URL generation
+  - Rate limiting (shouldCheckForUpdate — no more than once per 4 hours)
+  - Critical update detection (major version changes)
+- Extended app-store.ts — added update state fields:
+  - updateAvailable, updateDismissed, updateInfo, lastUpdateCheck, updateDialogOpen
+  - Persistent storage: updateDismissed, lastUpdateCheck
+- Created src/hooks/use-update-checker.ts — automatic update checking hook:
+  - Checks on mount, every 30 min, on tab visibility change
+  - Auto-opens dialog for critical updates
+  - Force check option for manual trigger
+- Created src/components/update-banner.tsx — animated banner under header:
+  - Emerald gradient for regular updates, red for critical
+  - Pulsing dot indicator, dismiss button
+  - Smooth enter/exit animation via framer-motion
+- Created src/components/update-dialog.tsx — full bottom-sheet dialog:
+  - Version comparison badge (current → latest)
+  - Release date and APK size info
+  - Numbered changelog list
+  - Critical warning section
+  - Download button, "Later" dismiss, GitHub releases link
+- Updated page.tsx:
+  - Added HeaderActions component with update indicator (pulse dot) and settings menu
+  - DropdownMenu with version info, manual update check, GitHub link
+  - Integrated UpdateBanner and UpdateDialog
+  - Connected useUpdateChecker hook
+- Updated dashboard-tab.tsx:
+  - Version badge in welcome card title
+  - Update button in action bar (shown when update available)
+- Added CSS animations: updatePulse, shimmer for update indicators
+- Built APK v1.0.0 (5.7MB)
+- Created GitHub Release v1.0.0 with APK attached
+- Pushed all changes to GitHub
+
+Stage Summary:
+- Complete update system implemented with 3-tier notification:
+  1. Header icon with pulse indicator (always visible)
+  2. UpdateBanner under header (dismissable)
+  3. Full UpdateDialog with changelog and download
+- GitHub Releases API integration for automatic version checking
+- Critical update detection with forced notification
+- Rate-limited checks + manual "Check for updates" option
+- Version info displayed in dashboard and settings menu
+- GitHub Release v1.0.0 created with APK download
