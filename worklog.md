@@ -62,27 +62,15 @@ Task: Fix bugs in AutoTracker API routes and re-seed database
 
 Work Log:
 - Read all 5 POST route files and identified missing type coercion bugs
-- Fixed `/api/vehicles/route.ts` POST: added `parseInt()` for `year` and `currentMileage`, added `console.error`
-- Fixed `/api/maintenance-schedules/route.ts` POST: added `parseInt()` for `intervalMileage`, `intervalMonths`, `lastMileage`, `nextMileage`; added date validation for `lastDate`/`nextDate`; added `console.error`
-- Fixed `/api/maintenance-records/route.ts` POST: added `parseInt()` for `mileage`, `parseFloat()` for `cost`; added date validation; added `console.error`
-- Fixed `/api/parts/route.ts` POST: added `parseFloat()` for `cost`; added date validation for `purchaseDate`; added `console.error`
-- `/api/expenses/route.ts` POST was already partially fixed (had `parseFloat` and date validation)
-- Fixed all 5 [id] PUT routes with proper type coercion, date validation, partial update support (only updating fields that are defined), and `console.error` logging
-- Checked all 4 dialog components - they correctly parse numbers with `parseInt`/`parseFloat` and send dates as YYYY-MM-DD format
-- Created `/home/z/my-project/scripts/seed.py` Python seed script that seeds data via API
+- Fixed all POST/PUT routes with proper type coercion, date validation, partial update support
+- Created seed script that seeds data via API
 - Successfully ran seed script: created 2 vehicles, 3 schedules, 5 records, 10 expenses, 3 parts
-- Tested all CRUD operations: POST, PUT, DELETE all work correctly
-- Verified dashboard API returns meaningful data: 2 vehicles, 3 upcoming maintenance items, 8,300₽ monthly expenses
-- Ran lint - all clean, no errors
+- All CRUD operations verified working
 
 Stage Summary:
-- All API POST/PUT routes now properly coerce types (parseInt for Int fields, parseFloat for Float fields)
-- Date fields validated with `isNaN(date.getTime())` check before Prisma insert
-- All catch blocks now include `console.error` for debugging
-- PUT routes support partial updates (only update fields present in request body)
-- Database re-seeded with demo data via Python seed script
+- All API POST/PUT routes now properly coerce types
+- Database re-seeded with demo data
 - All CRUD operations verified working
-- Dashboard API returning correct aggregated data
 
 ---
 Task ID: 2-5
@@ -90,36 +78,40 @@ Agent: Conversion Agent
 Task: Convert AutoTracker from server-side PWA to Capacitor native Android app using Dexie.js
 
 Work Log:
-- Created `/src/lib/db-client.ts` — Dexie database module with 5 IndexedDB tables (vehicles, maintenanceSchedules, maintenanceRecords, expenses, parts) and `generateId()` helper
-- Created `/src/lib/services.ts` — Full service layer replacing all 11 API routes with Dexie-based CRUD operations, dashboard aggregation, and `seedDemoData()` function
-- Created `/src/hooks/use-db.ts` — `useDbQuery<T>()` hook replacing fetch-based `useApi` hook, with deps array for re-fetching when dependencies change
-- Rewrote `dashboard-tab.tsx` — Replaced `useApi('/api/dashboard')` with `useDbQuery(getDashboardData)`, removed fetch calls
-- Rewrote `vehicles-tab.tsx` — Replaced `useApi('/api/vehicles')` with `useDbQuery(getVehicles)`, replaced `fetch DELETE` with `deleteVehicle()` service
-- Rewrote `maintenance-tab.tsx` — Replaced 3 `useApi` calls with `useDbQuery` + service functions, replaced delete fetch calls with `deleteMaintenanceSchedule()`/`deleteMaintenanceRecord()`
-- Rewrote `expenses-tab.tsx` — Replaced `useApi` with `useDbQuery`, replaced delete with `deleteExpense()` service
-- Rewrote `stats-tab.tsx` — Replaced all `useApi` calls with `useDbQuery` + service functions for expenses and maintenance records
-- Rewrote `add-vehicle-dialog.tsx` — Replaced `useApi` with `useDbQuery(getVehicles)`, replaced POST/PUT fetch with `createVehicle()`/`updateVehicle()`
-- Rewrote `add-expense-dialog.tsx` — Replaced `useApi` with `useDbQuery(getVehicles)`, replaced POST fetch with `createExpense()`
-- Rewrote `add-maintenance-dialog.tsx` — Replaced `useApi` with `useDbQuery`, replaced POST fetch with `createMaintenanceSchedule()`/`createMaintenanceRecord()`
-- Rewrote `add-part-dialog.tsx` — Replaced `useApi` with `useDbQuery`, replaced POST fetch with `createPart()`
-- Updated `page.tsx` — Added `useEffect(() => { seedDemoData() }, [])` for first-load seeding
-- Removed `/src/app/api/` directory entirely — no server-side API routes needed
-- Updated `next.config.ts` — Changed `output: 'standalone'` to `output: 'export'`, added `images: { unoptimized: true }`
-- Updated `package.json` — Simplified build script to just `next build`
-- Created `capacitor.config.ts` — Capacitor config with appId `com.autotracker.app`, webDir `out`, StatusBar and SplashScreen plugins
-- Built static export with `next build` — `out/` directory generated successfully
-- Added Capacitor Android platform with `npx cap add android`
-- Synced web assets with `npx cap sync`
-- Built APK with Gradle using `JAVA_HOME=/tmp/jdk-21.0.11+10` — BUILD SUCCESSFUL in 49s
-- Copied APK to `/home/z/my-project/AutoTracker.apk` (4.8MB) and `/home/z/my-project/download/AutoTracker.apk`
-- All lint checks pass (0 errors, 0 warnings)
-- Dev server running without compilation errors
+- Created Dexie database module with 5 IndexedDB tables
+- Created full service layer replacing all 11 API routes with Dexie-based CRUD operations
+- Created useDbQuery hook replacing fetch-based useApi hook
+- Rewrote all tab components and dialog components to use Dexie services
+- Converted to static export for Capacitor
+- Added Capacitor Android platform
+- Built APK successfully (4.8MB)
 
 Stage Summary:
-- App fully converted from server-side PWA (Prisma + SQLite + API routes) to client-side offline app (Dexie.js + IndexedDB)
-- Zero server API calls — all data operations happen client-side via IndexedDB
-- Static export (out/) works as Capacitor webDir
-- Android APK built successfully (4.8MB debug APK)
-- Demo data seeds on first load via Dexie
-- All existing visual design preserved (emerald theme, bottom nav, cards, charts)
-- All UI text still in Russian
+- App fully converted to client-side offline app (Dexie.js + IndexedDB)
+- Android APK built successfully
+- All UI preserved
+
+---
+Task ID: 9
+Agent: Main Agent
+Task: Re-check all dropdowns, dialogs, component dependencies, layout correctness, and generate app logo
+
+Work Log:
+- Reviewed all 4 dialog components and found bugs
+- Fixed: all dialogs now refresh data after create/update operations
+- Fixed: expense delete button now visible on mobile (not only on hover)
+- Fixed: parts categories now include filter/oil matching seed data
+- Added: Details/Parts button in vehicle card expanded section
+- Added: category grid selector in AddPartDialog (like expense categories)
+- Generated professional AutoTracker app logo using AI
+- Updated all Android launcher icons and splash screens with new logo
+- Updated PWA manifest icons with new logo
+- Built updated APK (5.4MB)
+- Pushed all changes to GitHub
+
+Stage Summary:
+- All dialog refresh bugs fixed
+- Delete button now visible on mobile
+- Parts categories expanded and UI improved
+- Professional AI-generated app logo applied to all platforms
+- APK rebuilt and uploaded to GitHub
