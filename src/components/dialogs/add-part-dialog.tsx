@@ -2,7 +2,7 @@
 
 import { useAppStore } from '@/components/app-store'
 import { useDbQuery } from '@/hooks/use-db'
-import { getVehicles as getVehiclesService, createPart, type Vehicle } from '@/lib/services'
+import { getVehicles as getVehiclesService, createPart, type Vehicle, type Part, getParts } from '@/lib/services'
 import {
   Dialog,
   DialogContent,
@@ -24,18 +24,21 @@ import { toast } from 'sonner'
 import { Package } from 'lucide-react'
 
 const partCategories = [
-  { value: 'engine', label: 'Двигатель' },
-  { value: 'brakes', label: 'Тормоза' },
-  { value: 'suspension', label: 'Подвеска' },
-  { value: 'electrical', label: 'Электрика' },
-  { value: 'body', label: 'Кузов' },
-  { value: 'interior', label: 'Салон' },
-  { value: 'other', label: 'Другое' },
+  { value: 'engine', label: 'Двигатель', icon: '🔧' },
+  { value: 'brakes', label: 'Тормоза', icon: '🛑' },
+  { value: 'suspension', label: 'Подвеска', icon: '🔩' },
+  { value: 'electrical', label: 'Электрика', icon: '⚡' },
+  { value: 'body', label: 'Кузов', icon: '🚗' },
+  { value: 'interior', label: 'Салон', icon: '💺' },
+  { value: 'filter', label: 'Фильтры', icon: '🔄' },
+  { value: 'oil', label: 'Масло', icon: '🛢️' },
+  { value: 'other', label: 'Другое', icon: '📦' },
 ]
 
 export function AddPartDialog() {
   const { addPartOpen, setAddPartOpen, selectedVehicleId } = useAppStore()
   const { data: vehicles } = useDbQuery<Vehicle[]>(() => getVehiclesService())
+  const { refresh: refreshParts } = useDbQuery<Part[]>(() => getParts(selectedVehicleId || undefined), [selectedVehicleId])
 
   const [form, setForm] = useState({
     vehicleId: '',
@@ -88,6 +91,7 @@ export function AddPartDialog() {
         notes: form.notes,
       })
       toast.success('Запчасть добавлена')
+      refreshParts()
       handleClose()
     } catch {
       toast.error('Ошибка сохранения')
@@ -151,25 +155,31 @@ export function AddPartDialog() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-xs font-medium">Категория</Label>
-              <Select
-                value={form.category}
-                onValueChange={(v) => setForm({ ...form, category: v })}
-              >
-                <SelectTrigger className="h-10">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {partCategories.map((cat) => (
-                    <SelectItem key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="space-y-2">
+            <Label className="text-xs font-medium">Категория</Label>
+            <div className="grid grid-cols-3 gap-1.5">
+              {partCategories.map((cat) => {
+                const isActive = form.category === cat.value
+                return (
+                  <button
+                    key={cat.value}
+                    type="button"
+                    onClick={() => setForm({ ...form, category: cat.value })}
+                    className={`flex items-center gap-1.5 p-2 rounded-xl text-xs font-medium transition-all duration-200 ${
+                      isActive
+                        ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-200 dark:ring-emerald-800'
+                        : 'bg-muted/40 text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <span className="text-sm">{cat.icon}</span>
+                    {cat.label}
+                  </button>
+                )
+              })}
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="partCost" className="text-xs font-medium">Стоимость (₽)</Label>
               <Input
@@ -183,9 +193,6 @@ export function AddPartDialog() {
                 className="h-10 font-semibold tabular-nums"
               />
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="purchaseDate" className="text-xs font-medium">Дата покупки</Label>
               <Input
