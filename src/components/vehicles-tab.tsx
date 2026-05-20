@@ -22,6 +22,10 @@ import {
   Gauge,
   Fuel,
   Palette,
+  Receipt,
+  Wrench,
+  Package,
+  ChevronRight,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
@@ -34,8 +38,29 @@ const fuelTypeLabels: Record<string, string> = {
   hybrid: 'Гибрид',
 }
 
+const fuelColors: Record<string, string> = {
+  petrol: 'bg-orange-50 dark:bg-orange-950/50 text-orange-600 dark:text-orange-400',
+  diesel: 'bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400',
+  gas: 'bg-cyan-50 dark:bg-cyan-950/50 text-cyan-600 dark:text-cyan-400',
+  electric: 'bg-green-50 dark:bg-green-950/50 text-green-600 dark:text-green-400',
+  hybrid: 'bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400',
+}
+
 function formatMileage(km: number) {
   return new Intl.NumberFormat('ru-RU').format(km) + ' км'
+}
+
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.05 },
+  },
+}
+
+const item = {
+  hidden: { opacity: 0, y: 6 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] } },
 }
 
 export function VehiclesTab() {
@@ -65,76 +90,70 @@ export function VehiclesTab() {
   }
 
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key="vehicles"
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -8 }}
-        transition={{ duration: 0.2 }}
-        className="p-4 space-y-3"
-      >
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Мой транспорт</h2>
+    <motion.div
+      variants={container}
+      initial="hidden"
+      animate="show"
+      className="p-4 space-y-4"
+    >
+      <motion.div variants={item} className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Мой транспорт</h2>
+        <Button
+          size="sm"
+          className="bg-emerald-600 hover:bg-emerald-700 text-white h-9 shadow-sm shadow-emerald-200/40 dark:shadow-emerald-900/30"
+          onClick={() => setAddVehicleOpen(true)}
+        >
+          <Plus className="h-4 w-4 mr-1" />
+          Добавить
+        </Button>
+      </motion.div>
+
+      {!data || data.length === 0 ? (
+        <motion.div variants={item} className="text-center py-16 text-muted-foreground">
+          <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 mx-auto mb-4">
+            <Car className="h-8 w-8 text-emerald-400" />
+          </div>
+          <p className="text-base font-medium mb-1">Нет транспортных средств</p>
+          <p className="text-sm mb-4 text-muted-foreground/70">Добавьте ваш первый автомобиль</p>
           <Button
-            size="sm"
-            className="bg-emerald-600 hover:bg-emerald-700 text-white h-9"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
             onClick={() => setAddVehicleOpen(true)}
           >
             <Plus className="h-4 w-4 mr-1" />
-            Добавить
+            Добавить авто
           </Button>
-        </div>
-
-        {!data || data.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            <Car className="h-16 w-16 mx-auto mb-4 opacity-30" />
-            <p className="text-base font-medium mb-1">Нет транспортных средств</p>
-            <p className="text-sm mb-4">Добавьте ваш первый автомобиль</p>
-            <Button
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              onClick={() => setAddVehicleOpen(true)}
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Добавить авто
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {data.map((vehicle) => {
-              const isSelected = selectedVehicleId === vehicle.id
-              const counts = (vehicle as any)._count as { expenses: number; maintenanceRecords: number; parts: number }
-              return (
-                <motion.div
-                  key={vehicle.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
+        </motion.div>
+      ) : (
+        <div className="space-y-3">
+          {data.map((vehicle) => {
+            const isSelected = selectedVehicleId === vehicle.id
+            const counts = (vehicle as any)._count as { expenses: number; maintenanceRecords: number; parts: number }
+            return (
+              <motion.div key={vehicle.id} variants={item}>
+                <Card
+                  className={`border-0 shadow-sm cursor-pointer transition-all duration-200 overflow-hidden ${
+                    isSelected
+                      ? 'ring-2 ring-emerald-500/60 shadow-emerald-100/50 dark:shadow-emerald-950/30'
+                      : 'card-hover'
+                  }`}
+                  onClick={() => setSelectedVehicleId(isSelected ? null : vehicle.id)}
                 >
-                  <Card
-                    className={`border-0 shadow-sm cursor-pointer transition-all ${
-                      isSelected
-                        ? 'ring-2 ring-emerald-500 shadow-emerald-100 dark:shadow-emerald-950'
-                        : 'hover:shadow-md'
-                    }`}
-                    onClick={() => setSelectedVehicleId(isSelected ? null : vehicle.id)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950 shrink-0">
-                            <Car className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-sm">
-                              {vehicle.name || `${vehicle.brand} ${vehicle.model}`}
-                            </h3>
-                            <p className="text-xs text-muted-foreground">
-                              {vehicle.brand} {vehicle.model} · {vehicle.year}
-                            </p>
-                          </div>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 shrink-0">
+                          <Car className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                         </div>
+                        <div>
+                          <h3 className="font-semibold text-sm">
+                            {vehicle.name || `${vehicle.brand} ${vehicle.model}`}
+                          </h3>
+                          <p className="text-xs text-muted-foreground">
+                            {vehicle.brand} {vehicle.model} · {vehicle.year}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                             <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -152,7 +171,7 @@ export function VehiclesTab() {
                               Редактировать
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              className="text-destructive"
+                              className="text-destructive focus:text-destructive"
                               onClick={(e) => {
                                 e.stopPropagation()
                                 handleDelete(vehicle.id)
@@ -164,94 +183,135 @@ export function VehiclesTab() {
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
+                    </div>
 
+                    <AnimatePresence>
                       {isSelected && (
                         <motion.div
                           initial={{ height: 0, opacity: 0 }}
                           animate={{ height: 'auto', opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
-                          className="mt-3 pt-3 border-t space-y-2"
+                          transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                          className="overflow-hidden"
                         >
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div className="flex items-center gap-1.5 text-muted-foreground">
-                              <Gauge className="h-3.5 w-3.5" />
-                              {formatMileage(vehicle.currentMileage)}
-                            </div>
-                            <div className="flex items-center gap-1.5 text-muted-foreground">
-                              <Fuel className="h-3.5 w-3.5" />
-                              {fuelTypeLabels[vehicle.fuelType] || vehicle.fuelType}
-                            </div>
-                            {vehicle.color && (
-                              <div className="flex items-center gap-1.5 text-muted-foreground">
-                                <Palette className="h-3.5 w-3.5" />
-                                {vehicle.color}
+                          <div className="mt-3 pt-3 border-t space-y-3">
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/40">
+                                <Gauge className="h-3.5 w-3.5 text-muted-foreground" />
+                                <span className="text-xs text-muted-foreground">{formatMileage(vehicle.currentMileage)}</span>
                               </div>
-                            )}
-                            {vehicle.licensePlate && (
-                              <div className="text-muted-foreground">
-                                🪪 {vehicle.licensePlate}
+                              <div className={`flex items-center gap-2 p-2 rounded-lg ${fuelColors[vehicle.fuelType] || 'bg-muted/40'}`}>
+                                <Fuel className="h-3.5 w-3.5" />
+                                <span className="text-xs">{fuelTypeLabels[vehicle.fuelType] || vehicle.fuelType}</span>
                               </div>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap gap-1.5 pt-1">
-                            <Badge variant="secondary" className="text-[10px]">
-                              💰 {counts?.expenses || 0} расходов
-                            </Badge>
-                            <Badge variant="secondary" className="text-[10px]">
-                              🔧 {counts?.maintenanceRecords || 0} ТО
-                            </Badge>
-                            <Badge variant="secondary" className="text-[10px]">
-                              ⚙️ {counts?.parts || 0} запчастей
-                            </Badge>
-                          </div>
-                          <div className="flex gap-2 pt-1">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="flex-1 h-8 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setSelectedVehicleId(vehicle.id)
-                                setActiveTab('expenses')
-                              }}
-                            >
-                              Расходы
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="flex-1 h-8 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setSelectedVehicleId(vehicle.id)
-                                setActiveTab('maintenance')
-                              }}
-                            >
-                              ТО
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="flex-1 h-8 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setSelectedVehicleId(vehicle.id)
-                                setActiveTab('stats')
-                              }}
-                            >
-                              Статистика
-                            </Button>
+                              {vehicle.color && (
+                                <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/40">
+                                  <Palette className="h-3.5 w-3.5 text-muted-foreground" />
+                                  <span className="text-xs text-muted-foreground">{vehicle.color}</span>
+                                </div>
+                              )}
+                              {vehicle.licensePlate && (
+                                <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/40">
+                                  <span className="text-xs font-mono text-muted-foreground">{vehicle.licensePlate}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex gap-2">
+                              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/50">
+                                <Receipt className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                                <span className="text-xs font-medium text-blue-700 dark:text-blue-300">{counts?.expenses || 0}</span>
+                                <span className="text-[10px] text-blue-600/70 dark:text-blue-400/70">расходов</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/50">
+                                <Wrench className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                                <span className="text-xs font-medium text-amber-700 dark:text-amber-300">{counts?.maintenanceRecords || 0}</span>
+                                <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70">ТО</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/50">
+                                <Package className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                                <span className="text-xs font-medium text-purple-700 dark:text-purple-300">{counts?.parts || 0}</span>
+                                <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70">деталей</span>
+                              </div>
+                            </div>
+
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="flex-1 h-8 text-xs gap-1"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setSelectedVehicleId(vehicle.id)
+                                  setActiveTab('expenses')
+                                }}
+                              >
+                                <Receipt className="h-3 w-3" />
+                                Расходы
+                                <ChevronRight className="h-3 w-3 opacity-40" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="flex-1 h-8 text-xs gap-1"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setSelectedVehicleId(vehicle.id)
+                                  setActiveTab('maintenance')
+                                }}
+                              >
+                                <Wrench className="h-3 w-3" />
+                                ТО
+                                <ChevronRight className="h-3 w-3 opacity-40" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="flex-1 h-8 text-xs gap-1"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setSelectedVehicleId(vehicle.id)
+                                  setActiveTab('stats')
+                                }}
+                              >
+                                <BarChart3Icon className="h-3 w-3" />
+                                Статистика
+                                <ChevronRight className="h-3 w-3 opacity-40" />
+                              </Button>
+                            </div>
                           </div>
                         </motion.div>
                       )}
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              )
-            })}
-          </div>
-        )}
-      </motion.div>
-    </AnimatePresence>
+                    </AnimatePresence>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )
+          })}
+        </div>
+      )}
+    </motion.div>
+  )
+}
+
+function BarChart3Icon(props: React.SVGProps<SVGSVGElement> & { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M3 3v18h18" />
+      <path d="M18 17V9" />
+      <path d="M13 17V5" />
+      <path d="M8 17v-3" />
+    </svg>
   )
 }

@@ -111,48 +111,54 @@ export function AddVehicleDialog() {
 
   return (
     <Dialog open={addVehicleOpen} onOpenChange={(open) => { if (!open) handleClose() }}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Car className="h-5 w-5 text-emerald-600" />
+      <DialogContent className="bottom-sheet-content max-w-md">
+        <div className="bottom-sheet-handle" />
+        <DialogHeader className="pb-2">
+          <DialogTitle className="flex items-center gap-2.5">
+            <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/50">
+              <Car className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            </div>
             {editVehicleId ? 'Редактировать транспорт' : 'Добавить транспорт'}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 px-1">
           <div className="space-y-2">
-            <Label htmlFor="name">Название</Label>
+            <Label htmlFor="name" className="text-xs font-medium">Название</Label>
             <Input
               id="name"
               placeholder="Мой автомобиль"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className="h-10"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="brand">Марка *</Label>
+              <Label htmlFor="brand" className="text-xs font-medium">Марка *</Label>
               <Input
                 id="brand"
                 placeholder="Toyota"
                 value={form.brand}
                 onChange={(e) => setForm({ ...form, brand: e.target.value })}
+                className="h-10"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="model">Модель *</Label>
+              <Label htmlFor="model" className="text-xs font-medium">Модель *</Label>
               <Input
                 id="model"
                 placeholder="Camry"
                 value={form.model}
                 onChange={(e) => setForm({ ...form, model: e.target.value })}
+                className="h-10"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="year">Год *</Label>
+              <Label htmlFor="year" className="text-xs font-medium">Год *</Label>
               <Input
                 id="year"
                 type="number"
@@ -160,15 +166,16 @@ export function AddVehicleDialog() {
                 max={2030}
                 value={form.year}
                 onChange={(e) => setForm({ ...form, year: parseInt(e.target.value) || 0 })}
+                className="h-10"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="fuelType">Тип топлива</Label>
+              <Label htmlFor="fuelType" className="text-xs font-medium">Тип топлива</Label>
               <Select
                 value={form.fuelType}
                 onValueChange={(v) => setForm({ ...form, fuelType: v })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -184,58 +191,62 @@ export function AddVehicleDialog() {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="currentMileage">Пробег (км)</Label>
+              <Label htmlFor="currentMileage" className="text-xs font-medium">Пробег (км)</Label>
               <Input
                 id="currentMileage"
                 type="number"
                 min={0}
-                value={form.currentMileage}
+                value={form.currentMileage || ''}
                 onChange={(e) => setForm({ ...form, currentMileage: parseInt(e.target.value) || 0 })}
+                className="h-10"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="color">Цвет</Label>
+              <Label htmlFor="color" className="text-xs font-medium">Цвет</Label>
               <Input
                 id="color"
                 placeholder="Чёрный"
                 value={form.color}
                 onChange={(e) => setForm({ ...form, color: e.target.value })}
+                className="h-10"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="vin">VIN</Label>
+            <Label htmlFor="vin" className="text-xs font-medium">VIN</Label>
             <Input
               id="vin"
               placeholder="VIN номер"
               value={form.vin}
               onChange={(e) => setForm({ ...form, vin: e.target.value })}
+              className="h-10 font-mono text-sm"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="licensePlate">Гос. номер</Label>
+            <Label htmlFor="licensePlate" className="text-xs font-medium">Гос. номер</Label>
             <Input
               id="licensePlate"
               placeholder="А 000 АА 00"
               value={form.licensePlate}
               onChange={(e) => setForm({ ...form, licensePlate: e.target.value })}
+              className="h-10 font-mono"
             />
           </div>
 
-          <div className="flex gap-2 pt-2">
+          <div className="flex gap-2 pt-2 pb-2">
             <Button
               type="button"
               variant="outline"
-              className="flex-1"
+              className="flex-1 h-11"
               onClick={handleClose}
             >
               Отмена
             </Button>
             <Button
               type="submit"
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white h-11 shadow-sm shadow-emerald-200/40 dark:shadow-emerald-900/30"
               disabled={saving}
             >
               {saving ? 'Сохранение...' : editVehicleId ? 'Сохранить' : 'Добавить'}

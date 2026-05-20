@@ -42,7 +42,7 @@ export function AddPartDialog() {
     name: '',
     partNumber: '',
     category: 'other',
-    cost: 0,
+    cost: '' as string | number,
     purchaseDate: new Date().toISOString().split('T')[0],
     supplier: '',
     notes: '',
@@ -51,11 +51,16 @@ export function AddPartDialog() {
 
   useEffect(() => {
     if (addPartOpen) {
-      setForm((prev) => ({
-        ...prev,
+      setForm({
         vehicleId: selectedVehicleId || vehicles?.[0]?.id || '',
+        name: '',
+        partNumber: '',
+        category: 'other',
+        cost: '',
         purchaseDate: new Date().toISOString().split('T')[0],
-      }))
+        supplier: '',
+        notes: '',
+      })
     }
   }, [addPartOpen, selectedVehicleId, vehicles])
 
@@ -72,7 +77,16 @@ export function AddPartDialog() {
 
     setSaving(true)
     try {
-      await createPart(form)
+      await createPart({
+        vehicleId: form.vehicleId,
+        name: form.name,
+        partNumber: form.partNumber,
+        category: form.category,
+        cost: parseFloat(String(form.cost)) || 0,
+        purchaseDate: form.purchaseDate,
+        supplier: form.supplier,
+        notes: form.notes,
+      })
       toast.success('Запчасть добавлена')
       handleClose()
     } catch {
@@ -84,21 +98,24 @@ export function AddPartDialog() {
 
   return (
     <Dialog open={addPartOpen} onOpenChange={(open) => { if (!open) handleClose() }}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5 text-emerald-600" />
+      <DialogContent className="bottom-sheet-content max-w-md">
+        <div className="bottom-sheet-handle" />
+        <DialogHeader className="pb-2">
+          <DialogTitle className="flex items-center gap-2.5">
+            <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/50">
+              <Package className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            </div>
             Добавить запчасть
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 px-1">
           <div className="space-y-2">
-            <Label>Транспорт *</Label>
+            <Label className="text-xs font-medium">Транспорт *</Label>
             <Select
               value={form.vehicleId}
               onValueChange={(v) => setForm({ ...form, vehicleId: v })}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-10">
                 <SelectValue placeholder="Выберите транспорт" />
               </SelectTrigger>
               <SelectContent>
@@ -113,33 +130,35 @@ export function AddPartDialog() {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="partName">Название *</Label>
+              <Label htmlFor="partName" className="text-xs font-medium">Название *</Label>
               <Input
                 id="partName"
                 placeholder="Тормозные колодки"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
+                className="h-10"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="partNumber">Артикул</Label>
+              <Label htmlFor="partNumber" className="text-xs font-medium">Артикул</Label>
               <Input
                 id="partNumber"
                 placeholder="Номер детали"
                 value={form.partNumber}
                 onChange={(e) => setForm({ ...form, partNumber: e.target.value })}
+                className="h-10 font-mono text-sm"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Категория</Label>
+              <Label className="text-xs font-medium">Категория</Label>
               <Select
                 value={form.category}
                 onValueChange={(v) => setForm({ ...form, category: v })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -152,56 +171,61 @@ export function AddPartDialog() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="partCost">Стоимость (₽)</Label>
+              <Label htmlFor="partCost" className="text-xs font-medium">Стоимость (₽)</Label>
               <Input
                 id="partCost"
                 type="number"
                 min={0}
                 step={0.01}
-                value={form.cost || ''}
-                onChange={(e) => setForm({ ...form, cost: parseFloat(e.target.value) || 0 })}
+                placeholder="0"
+                value={form.cost}
+                onChange={(e) => setForm({ ...form, cost: e.target.value })}
+                className="h-10 font-semibold tabular-nums"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="purchaseDate">Дата покупки</Label>
+              <Label htmlFor="purchaseDate" className="text-xs font-medium">Дата покупки</Label>
               <Input
                 id="purchaseDate"
                 type="date"
                 value={form.purchaseDate}
                 onChange={(e) => setForm({ ...form, purchaseDate: e.target.value })}
+                className="h-10"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="partSupplier">Поставщик</Label>
+              <Label htmlFor="partSupplier" className="text-xs font-medium">Поставщик</Label>
               <Input
                 id="partSupplier"
                 placeholder="Магазин"
                 value={form.supplier}
                 onChange={(e) => setForm({ ...form, supplier: e.target.value })}
+                className="h-10"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="partNotes">Заметки</Label>
+            <Label htmlFor="partNotes" className="text-xs font-medium">Заметки</Label>
             <Input
               id="partNotes"
               placeholder="Дополнительные заметки"
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              className="h-10"
             />
           </div>
 
-          <div className="flex gap-2 pt-2">
-            <Button type="button" variant="outline" className="flex-1" onClick={handleClose}>
+          <div className="flex gap-2 pt-2 pb-2">
+            <Button type="button" variant="outline" className="flex-1 h-11" onClick={handleClose}>
               Отмена
             </Button>
             <Button
               type="submit"
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white h-11 shadow-sm shadow-emerald-200/40 dark:shadow-emerald-900/30"
               disabled={saving}
             >
               {saving ? 'Сохранение...' : 'Добавить'}
