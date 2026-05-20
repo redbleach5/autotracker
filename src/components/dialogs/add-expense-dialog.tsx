@@ -21,16 +21,16 @@ import {
 } from '@/components/ui/select'
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
-import { Receipt } from 'lucide-react'
+import { Receipt, Fuel, Package, Shield, AlertCircle, Droplets, ParkingCircle, HelpCircle } from 'lucide-react'
 
 const expenseCategories = [
-  { value: 'parts', label: 'Запчасти' },
-  { value: 'fuel', label: 'Топливо' },
-  { value: 'insurance', label: 'Страховка' },
-  { value: 'fine', label: 'Штрафы' },
-  { value: 'wash', label: 'Мойка' },
-  { value: 'parking', label: 'Парковка' },
-  { value: 'other', label: 'Другое' },
+  { value: 'fuel', label: 'Топливо', icon: Fuel },
+  { value: 'parts', label: 'Запчасти', icon: Package },
+  { value: 'insurance', label: 'Страховка', icon: Shield },
+  { value: 'wash', label: 'Мойка', icon: Droplets },
+  { value: 'fine', label: 'Штрафы', icon: AlertCircle },
+  { value: 'parking', label: 'Парковка', icon: ParkingCircle },
+  { value: 'other', label: 'Другое', icon: HelpCircle },
 ]
 
 export function AddExpenseDialog() {
@@ -40,7 +40,7 @@ export function AddExpenseDialog() {
   const [form, setForm] = useState({
     vehicleId: '',
     category: 'fuel',
-    amount: 0,
+    amount: '' as string | number,
     date: new Date().toISOString().split('T')[0],
     description: '',
     supplier: '',
@@ -49,11 +49,14 @@ export function AddExpenseDialog() {
 
   useEffect(() => {
     if (addExpenseOpen) {
-      setForm((prev) => ({
-        ...prev,
+      setForm({
         vehicleId: selectedVehicleId || vehicles?.[0]?.id || '',
+        category: 'fuel',
+        amount: '',
         date: new Date().toISOString().split('T')[0],
-      }))
+        description: '',
+        supplier: '',
+      })
     }
   }, [addExpenseOpen, selectedVehicleId, vehicles])
 
@@ -70,7 +73,14 @@ export function AddExpenseDialog() {
 
     setSaving(true)
     try {
-      await createExpense(form)
+      await createExpense({
+        vehicleId: form.vehicleId,
+        category: form.category,
+        amount: parseFloat(String(form.amount)) || 0,
+        date: form.date,
+        description: form.description,
+        supplier: form.supplier,
+      })
       toast.success('Расход добавлен')
       handleClose()
     } catch {
@@ -82,21 +92,24 @@ export function AddExpenseDialog() {
 
   return (
     <Dialog open={addExpenseOpen} onOpenChange={(open) => { if (!open) handleClose() }}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Receipt className="h-5 w-5 text-emerald-600" />
+      <DialogContent className="bottom-sheet-content max-w-md">
+        <div className="bottom-sheet-handle" />
+        <DialogHeader className="pb-2">
+          <DialogTitle className="flex items-center gap-2.5">
+            <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/50">
+              <Receipt className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            </div>
             Добавить расход
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 px-1">
           <div className="space-y-2">
-            <Label>Транспорт *</Label>
+            <Label className="text-xs font-medium">Транспорт *</Label>
             <Select
               value={form.vehicleId}
               onValueChange={(v) => setForm({ ...form, vehicleId: v })}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-10">
                 <SelectValue placeholder="Выберите транспорт" />
               </SelectTrigger>
               <SelectContent>
@@ -110,79 +123,90 @@ export function AddExpenseDialog() {
           </div>
 
           <div className="space-y-2">
-            <Label>Категория</Label>
-            <Select
-              value={form.category}
-              onValueChange={(v) => setForm({ ...form, category: v })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {expenseCategories.map((cat) => (
-                  <SelectItem key={cat.value} value={cat.value}>
+            <Label className="text-xs font-medium">Категория</Label>
+            <div className="grid grid-cols-4 gap-1.5">
+              {expenseCategories.map((cat) => {
+                const Icon = cat.icon
+                const isActive = form.category === cat.value
+                return (
+                  <button
+                    key={cat.value}
+                    type="button"
+                    onClick={() => setForm({ ...form, category: cat.value })}
+                    className={`flex flex-col items-center gap-1 p-2 rounded-xl text-[10px] font-medium transition-all duration-200 ${
+                      isActive
+                        ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-200 dark:ring-emerald-800'
+                        : 'bg-muted/40 text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
                     {cat.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="amount">Сумма (₽) *</Label>
+              <Label htmlFor="amount" className="text-xs font-medium">Сумма (₽) *</Label>
               <Input
                 id="amount"
                 type="number"
                 min={0}
                 step={0.01}
-                value={form.amount || ''}
-                onChange={(e) => setForm({ ...form, amount: parseFloat(e.target.value) || 0 })}
+                placeholder="0"
+                value={form.amount}
+                onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                className="h-10 text-lg font-semibold tabular-nums"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="date">Дата *</Label>
+              <Label htmlFor="date" className="text-xs font-medium">Дата *</Label>
               <Input
                 id="date"
                 type="date"
                 value={form.date}
                 onChange={(e) => setForm({ ...form, date: e.target.value })}
+                className="h-10"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Описание</Label>
+            <Label htmlFor="description" className="text-xs font-medium">Описание</Label>
             <Input
               id="description"
               placeholder="Краткое описание"
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
+              className="h-10"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="supplier">Поставщик</Label>
+            <Label htmlFor="supplier" className="text-xs font-medium">Поставщик</Label>
             <Input
               id="supplier"
               placeholder="Название сервиса/магазина"
               value={form.supplier}
               onChange={(e) => setForm({ ...form, supplier: e.target.value })}
+              className="h-10"
             />
           </div>
 
-          <div className="flex gap-2 pt-2">
+          <div className="flex gap-2 pt-2 pb-2">
             <Button
               type="button"
               variant="outline"
-              className="flex-1"
+              className="flex-1 h-11"
               onClick={handleClose}
             >
               Отмена
             </Button>
             <Button
               type="submit"
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white h-11 shadow-sm shadow-emerald-200/40 dark:shadow-emerald-900/30"
               disabled={saving}
             >
               {saving ? 'Сохранение...' : 'Добавить'}
