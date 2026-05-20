@@ -269,7 +269,7 @@ export function ExpensesTab() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-7 w-7 p-0 text-muted-foreground/40 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="h-7 w-7 p-0 text-muted-foreground/40 hover:text-destructive transition-opacity"
                               onClick={(e) => e.stopPropagation()}
                             >
                               <Trash2 className="h-3.5 w-3.5" />

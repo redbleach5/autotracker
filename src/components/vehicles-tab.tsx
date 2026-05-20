@@ -27,6 +27,7 @@ import {
   Package,
   ChevronRight,
   BarChart3,
+  Settings2,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
@@ -66,7 +67,7 @@ const item = {
 
 export function VehiclesTab() {
   const { data, loading, refresh } = useDbQuery<Vehicle[]>(() => getVehicles())
-  const { selectedVehicleId, setSelectedVehicleId, setAddVehicleOpen, setEditVehicleId, setActiveTab } = useAppStore()
+  const { selectedVehicleId, setSelectedVehicleId, setAddVehicleOpen, setEditVehicleId, setActiveTab, setAddPartOpen } = useAppStore()
 
   const handleDelete = async (id: string) => {
     if (!confirm('Удалить транспортное средство? Все связанные данные будут удалены.')) return
@@ -272,12 +273,12 @@ export function VehiclesTab() {
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   setSelectedVehicleId(vehicle.id)
-                                  setActiveTab('stats')
+                                  setAddPartOpen(true)
                                 }}
                               >
-                                <BarChart3 className="h-3 w-3" />
-                                Статистика
-                                <ChevronRight className="h-3 w-3 opacity-40" />
+                                <Package className="h-3 w-3" />
+                                Детали
+                                <Plus className="h-3 w-3 opacity-40" />
                               </Button>
                             </div>
                           </div>

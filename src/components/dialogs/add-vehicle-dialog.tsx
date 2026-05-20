@@ -33,7 +33,7 @@ const fuelTypes = [
 
 export function AddVehicleDialog() {
   const { addVehicleOpen, setAddVehicleOpen, editVehicleId, setEditVehicleId } = useAppStore()
-  const { data: vehicles } = useDbQuery<Vehicle[]>(() => getVehiclesService())
+  const { data: vehicles, refresh: refreshVehicles } = useDbQuery<Vehicle[]>(() => getVehiclesService())
 
   const editVehicle = editVehicleId
     ? vehicles?.find((v) => v.id === editVehicleId)
@@ -101,6 +101,7 @@ export function AddVehicleDialog() {
         await createVehicle(form)
         toast.success('Транспорт добавлен')
       }
+      refreshVehicles()
       handleClose()
     } catch {
       toast.error('Ошибка сохранения')

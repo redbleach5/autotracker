@@ -2,7 +2,7 @@
 
 import { useAppStore } from '@/components/app-store'
 import { useDbQuery } from '@/hooks/use-db'
-import { getVehicles as getVehiclesService, createExpense, type Vehicle } from '@/lib/services'
+import { getVehicles as getVehiclesService, createExpense, type Vehicle, type Expense, getExpenses } from '@/lib/services'
 import {
   Dialog,
   DialogContent,
@@ -36,6 +36,7 @@ const expenseCategories = [
 export function AddExpenseDialog() {
   const { addExpenseOpen, setAddExpenseOpen, selectedVehicleId } = useAppStore()
   const { data: vehicles } = useDbQuery<Vehicle[]>(() => getVehiclesService())
+  const { refresh: refreshExpenses } = useDbQuery<Expense[]>(() => getExpenses(selectedVehicleId || undefined), [selectedVehicleId])
 
   const [form, setForm] = useState({
     vehicleId: '',
@@ -82,6 +83,7 @@ export function AddExpenseDialog() {
         supplier: form.supplier,
       })
       toast.success('Расход добавлен')
+      refreshExpenses()
       handleClose()
     } catch {
       toast.error('Ошибка сохранения')

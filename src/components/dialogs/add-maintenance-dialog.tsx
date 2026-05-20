@@ -5,10 +5,12 @@ import { useDbQuery } from '@/hooks/use-db'
 import {
   getVehicles as getVehiclesService,
   getMaintenanceSchedules as getSchedulesService,
+  getMaintenanceRecords as getRecordsService,
   createMaintenanceSchedule,
   createMaintenanceRecord,
   type Vehicle,
   type MaintenanceSchedule,
+  type MaintenanceRecord,
 } from '@/lib/services'
 import {
   Dialog,
@@ -40,7 +42,8 @@ export function AddMaintenanceDialog() {
   } = useAppStore()
 
   const { data: vehicles } = useDbQuery<Vehicle[]>(() => getVehiclesService())
-  const { data: schedules } = useDbQuery<MaintenanceSchedule[]>(() => getSchedulesService())
+  const { data: schedules, refresh: refreshSchedules } = useDbQuery<MaintenanceSchedule[]>(() => getSchedulesService(selectedVehicleId || undefined), [selectedVehicleId])
+  const { refresh: refreshRecords } = useDbQuery<MaintenanceRecord[]>(() => getRecordsService(selectedVehicleId || undefined), [selectedVehicleId])
 
   const isSchedule = addMaintenanceScheduleOpen
   const isOpen = addMaintenanceScheduleOpen || addMaintenanceRecordOpen
@@ -112,6 +115,7 @@ export function AddMaintenanceDialog() {
         intervalMonths: parseInt(String(scheduleForm.intervalMonths)) || 0,
       })
       toast.success('Расписание создано')
+      refreshSchedules()
       handleClose()
     } catch {
       toast.error('Ошибка сохранения')
@@ -139,6 +143,7 @@ export function AddMaintenanceDialog() {
         workshop: recordForm.workshop,
       })
       toast.success('Запись ТО добавлена')
+      refreshRecords()
       handleClose()
     } catch {
       toast.error('Ошибка сохранения')
