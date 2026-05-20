@@ -26,6 +26,7 @@ import {
   Wrench,
   Package,
   ChevronRight,
+  BarChart3,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
@@ -274,7 +275,7 @@ export function VehiclesTab() {
                                   setActiveTab('stats')
                                 }}
                               >
-                                <BarChart3Icon className="h-3 w-3" />
+                                <BarChart3 className="h-3 w-3" />
                                 Статистика
                                 <ChevronRight className="h-3 w-3 opacity-40" />
                               </Button>
@@ -291,27 +292,5 @@ export function VehiclesTab() {
         </div>
       )}
     </motion.div>
-  )
-}
-
-function BarChart3Icon(props: React.SVGProps<SVGSVGElement> & { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d="M3 3v18h18" />
-      <path d="M18 17V9" />
-      <path d="M13 17V5" />
-      <path d="M8 17v-3" />
-    </svg>
   )
 }

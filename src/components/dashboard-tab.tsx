@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import Image from 'next/image'
 import {
   Car,
   Wrench,
@@ -16,7 +17,6 @@ import {
   Clock,
   Plus,
   ChevronRight,
-  ArrowUpRight,
   Calendar,
   Fuel,
   Shield,
@@ -144,7 +144,7 @@ export function DashboardTab() {
                 <p className="text-emerald-100/90 mt-0.5 text-sm">Учёт ТО и расходов автомобиля</p>
               </div>
               <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/15">
-                <Car className="h-5 w-5 text-white" />
+                <Image src="/logo-icon.png" alt="AutoTracker" width={28} height={28} className="rounded-lg" />
               </div>
             </div>
             <div className="flex gap-2 mt-4">

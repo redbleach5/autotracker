@@ -26,8 +26,8 @@ export const metadata: Metadata = {
   description: "Приложение для учёта технического обслуживания, запчастей и расходов автомобиля",
   manifest: "/manifest.json",
   icons: {
-    icon: "/icon-192.png",
-    apple: "/icon-192.png",
+    icon: "/logo-192.png",
+    apple: "/logo-icon.png",
   },
   appleWebApp: {
     capable: true,
@@ -48,6 +48,8 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/logo-192.png" />
+        <link rel="apple-touch-icon" href="/logo-icon.png" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
