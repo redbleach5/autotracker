@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Vehicle {
+  id             String   @id @default(cuid())
+  name           String
+  brand          String
+  model          String
+  year           Int
+  vin            String   @default("")
+  licensePlate   String   @default("")
+  currentMileage Int      @default(0)
+  color          String   @default("")
+  fuelType       String   @default("petrol")
+  imageUrl       String   @default("")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  maintenanceSchedules MaintenanceSchedule[]
+  maintenanceRecords   MaintenanceRecord[]
+  expenses             Expense[]
+  parts                Part[]
+}
+
+model MaintenanceSchedule {
+  id              String    @id @default(cuid())
+  vehicleId       String
+  name            String
+  description     String    @default("")
+  intervalMileage Int       @default(0)
+  intervalMonths  Int       @default(0)
+  lastDate        DateTime?
+  lastMileage     Int       @default(0)
+  nextDate        DateTime?
+  nextMileage     Int       @default(0)
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  vehicle            Vehicle            @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  maintenanceRecords MaintenanceRecord[]
+}
+
+model MaintenanceRecord {
+  id          String   @id @default(cuid())
+  vehicleId   String
+  scheduleId  String?
+  date        DateTime
+  mileage     Int
+  cost        Float
+  description String   @default("")
+  workshop    String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  vehicle  Vehicle              @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  schedule MaintenanceSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  vehicleId   String
+  category    String   @default("other")
+  amount      Float
+  date        DateTime
+  description String   @default("")
+  supplier    String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+}
+
+model Part {
+  id           String   @id @default(cuid())
+  vehicleId    String
+  name         String
+  partNumber   String   @default("")
+  category     String   @default("other")
+  cost         Float    @default(0)
+  purchaseDate DateTime
+  supplier     String   @default("")
+  notes        String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+}
