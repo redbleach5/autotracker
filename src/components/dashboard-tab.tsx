@@ -25,8 +25,10 @@ import {
   ParkingCircle,
   AlertCircle,
   HelpCircle,
+  Download,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { CURRENT_VERSION } from '@/lib/update-service'
 
 const categoryLabels: Record<string, string> = {
   parts: 'Запчасти',
@@ -105,7 +107,7 @@ const item = {
 
 export function DashboardTab() {
   const { data, loading } = useDbQuery<DashboardData>(() => getDashboardData())
-  const { setActiveTab, setAddVehicleOpen, setAddExpenseOpen, setAddMaintenanceRecordOpen } = useAppStore()
+  const { setActiveTab, setAddVehicleOpen, setAddExpenseOpen, setAddMaintenanceRecordOpen, updateAvailable, updateInfo, setUpdateDialogOpen } = useAppStore()
 
   if (loading) {
     return (
@@ -140,7 +142,10 @@ export function DashboardTab() {
           <CardContent className="p-5 relative z-10">
             <div className="flex items-start justify-between">
               <div>
-                <h1 className="text-xl font-bold tracking-tight">AutoTracker</h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl font-bold tracking-tight">AutoTracker</h1>
+                  <span className="text-[10px] font-mono bg-white/15 px-1.5 py-0.5 rounded-md">v{CURRENT_VERSION.version}</span>
+                </div>
                 <p className="text-emerald-100/90 mt-0.5 text-sm">Учёт ТО и расходов автомобиля</p>
               </div>
               <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/15">
@@ -172,6 +177,20 @@ export function DashboardTab() {
                 <Plus className="h-3.5 w-3.5 mr-1" />
                 ТО
               </Button>
+              {updateAvailable && updateInfo && (
+                <Button
+                  size="sm"
+                  className={`h-8 text-xs backdrop-blur-sm ${
+                    updateInfo.isCritical
+                      ? 'bg-red-500/60 hover:bg-red-500/80 text-white border-0'
+                      : 'bg-white/20 hover:bg-white/30 text-white border-0'
+                  }`}
+                  onClick={() => setUpdateDialogOpen(true)}
+                >
+                  <Download className="h-3.5 w-3.5 mr-1" />
+                  v{updateInfo.version}
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>

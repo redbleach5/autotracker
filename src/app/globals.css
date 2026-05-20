@@ -287,3 +287,28 @@ html {
 .icon-transition:active {
   transform: scale(0.9);
 }
+
+/* Update pulse animation for badge */
+@keyframes updatePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.2); }
+}
+.update-pulse {
+  animation: updatePulse 2s ease-in-out infinite;
+}
+
+/* Update shimmer for banner */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.update-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    oklch(1 0 0 / 15%) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 3s ease-in-out infinite;
+}
