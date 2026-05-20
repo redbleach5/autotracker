@@ -8,21 +8,29 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await request.json()
+    const data: Record<string, unknown> = {}
+    if (body.name !== undefined) data.name = body.name
+    if (body.partNumber !== undefined) data.partNumber = body.partNumber
+    if (body.category !== undefined) data.category = body.category
+    if (body.cost !== undefined) data.cost = parseFloat(body.cost) || 0
+    if (body.purchaseDate !== undefined) {
+      const parsedDate = new Date(body.purchaseDate)
+      if (isNaN(parsedDate.getTime())) {
+        return NextResponse.json({ error: 'Invalid purchaseDate format' }, { status: 400 })
+      }
+      data.purchaseDate = parsedDate
+    }
+    if (body.supplier !== undefined) data.supplier = body.supplier
+    if (body.notes !== undefined) data.notes = body.notes
+
     const part = await db.part.update({
       where: { id },
-      data: {
-        name: body.name,
-        partNumber: body.partNumber,
-        category: body.category,
-        cost: body.cost,
-        purchaseDate: new Date(body.purchaseDate),
-        supplier: body.supplier,
-        notes: body.notes,
-      },
+      data,
       include: { vehicle: true },
     })
     return NextResponse.json(part)
-  } catch {
+  } catch (e) {
+    console.error('Failed to update part:', e)
     return NextResponse.json({ error: 'Failed to update part' }, { status: 500 })
   }
 }

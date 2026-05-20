@@ -25,17 +25,18 @@ export async function POST(request: Request) {
         name: body.name,
         brand: body.brand,
         model: body.model,
-        year: body.year,
+        year: parseInt(body.year) || new Date().getFullYear(),
         vin: body.vin || '',
         licensePlate: body.licensePlate || '',
-        currentMileage: body.currentMileage || 0,
+        currentMileage: parseInt(body.currentMileage) || 0,
         color: body.color || '',
         fuelType: body.fuelType || 'petrol',
         imageUrl: body.imageUrl || '',
       },
     })
     return NextResponse.json(vehicle, { status: 201 })
-  } catch {
+  } catch (e) {
+    console.error('Failed to create vehicle:', e)
     return NextResponse.json({ error: 'Failed to create vehicle' }, { status: 500 })
   }
 }

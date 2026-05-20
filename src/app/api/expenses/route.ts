@@ -25,19 +25,24 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
+    const parsedDate = new Date(body.date)
+    if (isNaN(parsedDate.getTime())) {
+      return NextResponse.json({ error: 'Invalid date format' }, { status: 400 })
+    }
     const expense = await db.expense.create({
       data: {
         vehicleId: body.vehicleId,
         category: body.category || 'other',
-        amount: body.amount,
-        date: new Date(body.date),
+        amount: parseFloat(body.amount) || 0,
+        date: parsedDate,
         description: body.description || '',
         supplier: body.supplier || '',
       },
       include: { vehicle: true },
     })
     return NextResponse.json(expense, { status: 201 })
-  } catch {
+  } catch (e) {
+    console.error('Failed to create expense:', e)
     return NextResponse.json({ error: 'Failed to create expense' }, { status: 500 })
   }
 }

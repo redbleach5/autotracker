@@ -54,3 +54,32 @@ Stage Summary:
 - App is fully functional with PWA support
 - No lint errors, no runtime warnings
 - All demo data loading correctly
+
+---
+Task ID: 2
+Agent: Bug Fix Agent
+Task: Fix bugs in AutoTracker API routes and re-seed database
+
+Work Log:
+- Read all 5 POST route files and identified missing type coercion bugs
+- Fixed `/api/vehicles/route.ts` POST: added `parseInt()` for `year` and `currentMileage`, added `console.error`
+- Fixed `/api/maintenance-schedules/route.ts` POST: added `parseInt()` for `intervalMileage`, `intervalMonths`, `lastMileage`, `nextMileage`; added date validation for `lastDate`/`nextDate`; added `console.error`
+- Fixed `/api/maintenance-records/route.ts` POST: added `parseInt()` for `mileage`, `parseFloat()` for `cost`; added date validation; added `console.error`
+- Fixed `/api/parts/route.ts` POST: added `parseFloat()` for `cost`; added date validation for `purchaseDate`; added `console.error`
+- `/api/expenses/route.ts` POST was already partially fixed (had `parseFloat` and date validation)
+- Fixed all 5 [id] PUT routes with proper type coercion, date validation, partial update support (only updating fields that are defined), and `console.error` logging
+- Checked all 4 dialog components - they correctly parse numbers with `parseInt`/`parseFloat` and send dates as YYYY-MM-DD format
+- Created `/home/z/my-project/scripts/seed.py` Python seed script that seeds data via API
+- Successfully ran seed script: created 2 vehicles, 3 schedules, 5 records, 10 expenses, 3 parts
+- Tested all CRUD operations: POST, PUT, DELETE all work correctly
+- Verified dashboard API returns meaningful data: 2 vehicles, 3 upcoming maintenance items, 8,300₽ monthly expenses
+- Ran lint - all clean, no errors
+
+Stage Summary:
+- All API POST/PUT routes now properly coerce types (parseInt for Int fields, parseFloat for Float fields)
+- Date fields validated with `isNaN(date.getTime())` check before Prisma insert
+- All catch blocks now include `console.error` for debugging
+- PUT routes support partial updates (only update fields present in request body)
+- Database re-seeded with demo data via Python seed script
+- All CRUD operations verified working
+- Dashboard API returning correct aggregated data

@@ -35,23 +35,25 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await request.json()
+    const data: Record<string, unknown> = {}
+    if (body.name !== undefined) data.name = body.name
+    if (body.brand !== undefined) data.brand = body.brand
+    if (body.model !== undefined) data.model = body.model
+    if (body.year !== undefined) data.year = parseInt(body.year) || new Date().getFullYear()
+    if (body.vin !== undefined) data.vin = body.vin
+    if (body.licensePlate !== undefined) data.licensePlate = body.licensePlate
+    if (body.currentMileage !== undefined) data.currentMileage = parseInt(body.currentMileage) || 0
+    if (body.color !== undefined) data.color = body.color
+    if (body.fuelType !== undefined) data.fuelType = body.fuelType
+    if (body.imageUrl !== undefined) data.imageUrl = body.imageUrl
+
     const vehicle = await db.vehicle.update({
       where: { id },
-      data: {
-        name: body.name,
-        brand: body.brand,
-        model: body.model,
-        year: body.year,
-        vin: body.vin,
-        licensePlate: body.licensePlate,
-        currentMileage: body.currentMileage,
-        color: body.color,
-        fuelType: body.fuelType,
-        imageUrl: body.imageUrl,
-      },
+      data,
     })
     return NextResponse.json(vehicle)
-  } catch {
+  } catch (e) {
+    console.error('Failed to update vehicle:', e)
     return NextResponse.json({ error: 'Failed to update vehicle' }, { status: 500 })
   }
 }
