@@ -11,7 +11,6 @@ import {
 import { useAppStore } from '@/components/app-store'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Select,
@@ -42,7 +41,6 @@ import {
   Package,
   HelpCircle,
   Trash2,
-  TrendingUp,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
@@ -238,7 +236,7 @@ export function ExpensesTab() {
         </motion.div>
       ) : (
         <div className="space-y-2">
-          {filteredExpenses.map((expense, idx) => {
+          {filteredExpenses.map((expense) => {
             const Icon = categoryIcons[expense.category] || HelpCircle
             const colorClass = categoryColors[expense.category] || categoryColors.other
             const vehicle = vehicleMap[expense.vehicleId]

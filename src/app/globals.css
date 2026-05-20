@@ -206,15 +206,17 @@ html {
 .bottom-sheet-content {
   position: fixed !important;
   bottom: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
+  left: 50% !important;
+  right: auto !important;
   top: auto !important;
-  transform: none !important;
-  max-width: 100% !important;
+  transform: translateX(-50%) !important;
+  width: 100% !important;
+  max-width: 32rem !important;
   margin: 0 !important;
   border-radius: 20px 20px 0 0 !important;
   max-height: 92vh !important;
   animation: slideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  overflow-y: auto !important;
 }
 
 @keyframes slideUp {

@@ -13,8 +13,9 @@ import { AddVehicleDialog } from '@/components/dialogs/add-vehicle-dialog'
 import { AddExpenseDialog } from '@/components/dialogs/add-expense-dialog'
 import { AddMaintenanceDialog } from '@/components/dialogs/add-maintenance-dialog'
 import { AddPartDialog } from '@/components/dialogs/add-part-dialog'
-import { Car, Sun, Moon, Monitor } from 'lucide-react'
+import { Sun, Moon, Monitor } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import Image from 'next/image'
 
 function getGreeting(): string {
   const hour = new Date().getHours()
@@ -80,8 +81,8 @@ export default function Home() {
           <div className="flex items-center gap-2.5">
             {activeTab === 'dashboard' ? (
               <div className="flex items-center gap-2.5">
-                <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-emerald-500 shadow-sm shadow-emerald-200 dark:shadow-emerald-900">
-                  <Car className="h-4.5 w-4.5 text-white" />
+                <div className="flex items-center justify-center w-8 h-8 rounded-xl overflow-hidden">
+                  <Image src="/logo-icon.png" alt="AT" width={32} height={32} className="rounded-lg" />
                 </div>
                 <div>
                   <h1 className="font-bold text-base leading-tight">{tabTitles[activeTab]}</h1>
@@ -97,12 +98,14 @@ export default function Home() {
       </header>
 
       <main className="flex-1 overflow-y-auto pb-20">
-        <div key={activeTab} className="tab-content">
-          {activeTab === 'dashboard' && <DashboardTab />}
-          {activeTab === 'vehicles' && <VehiclesTab />}
-          {activeTab === 'maintenance' && <MaintenanceTab />}
-          {activeTab === 'expenses' && <ExpensesTab />}
-          {activeTab === 'stats' && <StatsTab />}
+        <div className="max-w-lg mx-auto">
+          <div key={activeTab} className="tab-content">
+            {activeTab === 'dashboard' && <DashboardTab />}
+            {activeTab === 'vehicles' && <VehiclesTab />}
+            {activeTab === 'maintenance' && <MaintenanceTab />}
+            {activeTab === 'expenses' && <ExpensesTab />}
+            {activeTab === 'stats' && <StatsTab />}
+          </div>
         </div>
       </main>
 
