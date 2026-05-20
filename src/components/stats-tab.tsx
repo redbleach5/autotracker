@@ -1,6 +1,14 @@
 'use client'
 
-import { useApi } from '@/hooks/use-api'
+import { useDbQuery } from '@/hooks/use-db'
+import {
+  getVehicles as getVehiclesService,
+  getExpenses as getExpensesService,
+  getMaintenanceRecords as getRecordsService,
+  type Vehicle,
+  type Expense,
+  type MaintenanceRecord,
+} from '@/lib/services'
 import { useAppStore } from '@/components/app-store'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -28,35 +36,6 @@ import {
   Legend,
 } from 'recharts'
 
-interface Vehicle {
-  id: string
-  name: string
-  brand: string
-  model: string
-}
-
-interface Expense {
-  id: string
-  vehicleId: string
-  category: string
-  amount: number
-  date: string
-  description: string
-  supplier: string
-  vehicle: Vehicle
-}
-
-interface MaintenanceRecord {
-  id: string
-  vehicleId: string
-  date: string
-  cost: number
-  description: string
-  workshop: string
-  vehicle: Vehicle
-  schedule: { id: string; name: string } | null
-}
-
 const categoryLabels: Record<string, string> = {
   parts: 'Запчасти',
   fuel: 'Топливо',
@@ -81,18 +60,17 @@ const monthNames = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 
 
 export function StatsTab() {
   const { selectedVehicleId, setSelectedVehicleId } = useAppStore()
-  const { data: vehicles, loading: vehiclesLoading } = useApi<Vehicle[]>('/api/vehicles')
+  const { data: vehicles, loading: vehiclesLoading } = useDbQuery<Vehicle[]>(() => getVehiclesService())
 
-  const expenseUrl = selectedVehicleId
-    ? `/api/expenses?vehicleId=${selectedVehicleId}`
-    : '/api/expenses'
+  const { data: expenses, loading: expensesLoading } = useDbQuery<Expense[]>(
+    () => getExpensesService(selectedVehicleId || undefined),
+    [selectedVehicleId]
+  )
 
-  const maintenanceUrl = selectedVehicleId
-    ? `/api/maintenance-records?vehicleId=${selectedVehicleId}`
-    : '/api/maintenance-records'
-
-  const { data: expenses, loading: expensesLoading } = useApi<Expense[]>(expenseUrl)
-  const { data: maintenanceRecords, loading: maintenanceLoading } = useApi<MaintenanceRecord[]>(maintenanceUrl)
+  const { data: maintenanceRecords, loading: maintenanceLoading } = useDbQuery<MaintenanceRecord[]>(
+    () => getRecordsService(selectedVehicleId || undefined),
+    [selectedVehicleId]
+  )
 
   const { pieData, barData, totalExpenses, totalMaintenance } = useMemo(() => {
     if (!expenses) return { pieData: [], barData: [], totalExpenses: 0, totalMaintenance: 0 }
@@ -125,7 +103,7 @@ export function StatsTab() {
       }
     })
     const bar = Object.entries(monthlyMap).map(([key, amount]) => {
-      const [year, month] = key.split('-')
+      const [, month] = key.split('-')
       return {
         name: monthNames[parseInt(month) - 1],
         amount: Math.round(amount),

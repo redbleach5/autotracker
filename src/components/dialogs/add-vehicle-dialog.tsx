@@ -1,7 +1,8 @@
 'use client'
 
 import { useAppStore } from '@/components/app-store'
-import { useApi } from '@/hooks/use-api'
+import { useDbQuery } from '@/hooks/use-db'
+import { getVehicles as getVehiclesService, createVehicle, updateVehicle, type Vehicle } from '@/lib/services'
 import {
   Dialog,
   DialogContent,
@@ -22,20 +23,6 @@ import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { Car } from 'lucide-react'
 
-interface Vehicle {
-  id: string
-  name: string
-  brand: string
-  model: string
-  year: number
-  vin: string
-  licensePlate: string
-  currentMileage: number
-  color: string
-  fuelType: string
-  imageUrl: string
-}
-
 const fuelTypes = [
   { value: 'petrol', label: 'Бензин' },
   { value: 'diesel', label: 'Дизель' },
@@ -46,7 +33,7 @@ const fuelTypes = [
 
 export function AddVehicleDialog() {
   const { addVehicleOpen, setAddVehicleOpen, editVehicleId, setEditVehicleId } = useAppStore()
-  const { data: vehicles } = useApi<Vehicle[]>('/api/vehicles')
+  const { data: vehicles } = useDbQuery<Vehicle[]>(() => getVehiclesService())
 
   const editVehicle = editVehicleId
     ? vehicles?.find((v) => v.id === editVehicleId)
@@ -108,20 +95,10 @@ export function AddVehicleDialog() {
     setSaving(true)
     try {
       if (editVehicleId) {
-        const res = await fetch(`/api/vehicles/${editVehicleId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
-        })
-        if (!res.ok) throw new Error()
+        await updateVehicle(editVehicleId, form)
         toast.success('Транспорт обновлён')
       } else {
-        const res = await fetch('/api/vehicles', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
-        })
-        if (!res.ok) throw new Error()
+        await createVehicle(form)
         toast.success('Транспорт добавлен')
       }
       handleClose()

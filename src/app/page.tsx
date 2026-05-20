@@ -1,6 +1,8 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useAppStore } from '@/components/app-store'
+import { seedDemoData } from '@/lib/services'
 import { DashboardTab } from '@/components/dashboard-tab'
 import { VehiclesTab } from '@/components/vehicles-tab'
 import { MaintenanceTab } from '@/components/maintenance-tab'
@@ -23,6 +25,10 @@ const tabTitles: Record<string, string> = {
 
 export default function Home() {
   const { activeTab } = useAppStore()
+
+  useEffect(() => {
+    seedDemoData()
+  }, [])
 
   return (
     <div className="min-h-screen flex flex-col bg-background">

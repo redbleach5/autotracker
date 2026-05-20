@@ -1,6 +1,7 @@
 'use client'
 
-import { useApi } from '@/hooks/use-api'
+import { useDbQuery } from '@/hooks/use-db'
+import { getDashboardData, type DashboardData } from '@/lib/services'
 import { useAppStore } from '@/components/app-store'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -18,36 +19,6 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
-interface DashboardData {
-  totalVehicles: number
-  upcomingMaintenance: Array<{
-    id: string
-    name: string
-    nextDate: string | null
-    nextMileage: number
-    vehicle: { id: string; name: string; brand: string; model: string }
-  }>
-  totalExpensesThisMonth: number
-  expensesByCategory: Record<string, number>
-  recentExpenses: Array<{
-    id: string
-    category: string
-    amount: number
-    date: string
-    description: string
-    vehicle: { id: string; name: string; brand: string; model: string }
-  }>
-  recentMaintenance: Array<{
-    id: string
-    date: string
-    cost: number
-    description: string
-    workshop: string
-    vehicle: { id: string; name: string; brand: string; model: string }
-    schedule: { id: string; name: string } | null
-  }>
-}
-
 const categoryLabels: Record<string, string> = {
   parts: 'Запчасти',
   fuel: 'Топливо',
@@ -58,7 +29,7 @@ const categoryLabels: Record<string, string> = {
   other: 'Другое',
 }
 
-function formatDate(dateStr: string) {
+function formatDate(dateStr: string | Date) {
   return new Date(dateStr).toLocaleDateString('ru-RU', {
     day: 'numeric',
     month: 'short',
@@ -74,7 +45,7 @@ function formatAmount(amount: number) {
   }).format(amount)
 }
 
-function getScheduleStatus(nextDate: string | null) {
+function getScheduleStatus(nextDate: string | Date | null) {
   if (!nextDate) return { label: 'Не задано', variant: 'secondary' as const }
   const now = new Date()
   const next = new Date(nextDate)
@@ -86,7 +57,7 @@ function getScheduleStatus(nextDate: string | null) {
 }
 
 export function DashboardTab() {
-  const { data, loading, refresh } = useApi<DashboardData>('/api/dashboard')
+  const { data, loading, refresh } = useDbQuery<DashboardData>(() => getDashboardData())
   const { setActiveTab, setAddVehicleOpen, setAddExpenseOpen, setAddMaintenanceRecordOpen } = useAppStore()
 
   if (loading) {
