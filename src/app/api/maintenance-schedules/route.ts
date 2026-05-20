@@ -22,23 +22,32 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
+    const lastDate = body.lastDate ? new Date(body.lastDate) : null
+    if (lastDate && isNaN(lastDate.getTime())) {
+      return NextResponse.json({ error: 'Invalid lastDate format' }, { status: 400 })
+    }
+    const nextDate = body.nextDate ? new Date(body.nextDate) : null
+    if (nextDate && isNaN(nextDate.getTime())) {
+      return NextResponse.json({ error: 'Invalid nextDate format' }, { status: 400 })
+    }
     const schedule = await db.maintenanceSchedule.create({
       data: {
         vehicleId: body.vehicleId,
         name: body.name,
         description: body.description || '',
-        intervalMileage: body.intervalMileage || 0,
-        intervalMonths: body.intervalMonths || 0,
-        lastDate: body.lastDate ? new Date(body.lastDate) : null,
-        lastMileage: body.lastMileage || 0,
-        nextDate: body.nextDate ? new Date(body.nextDate) : null,
-        nextMileage: body.nextMileage || 0,
+        intervalMileage: parseInt(body.intervalMileage) || 0,
+        intervalMonths: parseInt(body.intervalMonths) || 0,
+        lastDate,
+        lastMileage: parseInt(body.lastMileage) || 0,
+        nextDate,
+        nextMileage: parseInt(body.nextMileage) || 0,
         isActive: body.isActive ?? true,
       },
       include: { vehicle: true },
     })
     return NextResponse.json(schedule, { status: 201 })
-  } catch {
+  } catch (e) {
+    console.error('Failed to create schedule:', e)
     return NextResponse.json({ error: 'Failed to create schedule' }, { status: 500 })
   }
 }

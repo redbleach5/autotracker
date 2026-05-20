@@ -8,20 +8,28 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await request.json()
+    const data: Record<string, unknown> = {}
+    if (body.scheduleId !== undefined) data.scheduleId = body.scheduleId || null
+    if (body.date !== undefined) {
+      const parsedDate = new Date(body.date)
+      if (isNaN(parsedDate.getTime())) {
+        return NextResponse.json({ error: 'Invalid date format' }, { status: 400 })
+      }
+      data.date = parsedDate
+    }
+    if (body.mileage !== undefined) data.mileage = parseInt(body.mileage) || 0
+    if (body.cost !== undefined) data.cost = parseFloat(body.cost) || 0
+    if (body.description !== undefined) data.description = body.description
+    if (body.workshop !== undefined) data.workshop = body.workshop
+
     const record = await db.maintenanceRecord.update({
       where: { id },
-      data: {
-        scheduleId: body.scheduleId || null,
-        date: new Date(body.date),
-        mileage: body.mileage,
-        cost: body.cost,
-        description: body.description,
-        workshop: body.workshop,
-      },
+      data,
       include: { vehicle: true, schedule: true },
     })
     return NextResponse.json(record)
-  } catch {
+  } catch (e) {
+    console.error('Failed to update record:', e)
     return NextResponse.json({ error: 'Failed to update record' }, { status: 500 })
   }
 }

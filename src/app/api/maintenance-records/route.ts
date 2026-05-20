@@ -22,13 +22,17 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
+    const parsedDate = new Date(body.date)
+    if (isNaN(parsedDate.getTime())) {
+      return NextResponse.json({ error: 'Invalid date format' }, { status: 400 })
+    }
     const record = await db.maintenanceRecord.create({
       data: {
         vehicleId: body.vehicleId,
         scheduleId: body.scheduleId || null,
-        date: new Date(body.date),
-        mileage: body.mileage,
-        cost: body.cost,
+        date: parsedDate,
+        mileage: parseInt(body.mileage) || 0,
+        cost: parseFloat(body.cost) || 0,
         description: body.description || '',
         workshop: body.workshop || '',
       },
@@ -40,14 +44,15 @@ export async function POST(request: Request) {
       await db.maintenanceSchedule.update({
         where: { id: body.scheduleId },
         data: {
-          lastDate: new Date(body.date),
-          lastMileage: body.mileage,
+          lastDate: parsedDate,
+          lastMileage: parseInt(body.mileage) || 0,
         },
       })
     }
 
     return NextResponse.json(record, { status: 201 })
-  } catch {
+  } catch (e) {
+    console.error('Failed to create record:', e)
     return NextResponse.json({ error: 'Failed to create record' }, { status: 500 })
   }
 }

@@ -22,21 +22,26 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
+    const parsedDate = new Date(body.purchaseDate)
+    if (isNaN(parsedDate.getTime())) {
+      return NextResponse.json({ error: 'Invalid purchaseDate format' }, { status: 400 })
+    }
     const part = await db.part.create({
       data: {
         vehicleId: body.vehicleId,
         name: body.name,
         partNumber: body.partNumber || '',
         category: body.category || 'other',
-        cost: body.cost || 0,
-        purchaseDate: new Date(body.purchaseDate),
+        cost: parseFloat(body.cost) || 0,
+        purchaseDate: parsedDate,
         supplier: body.supplier || '',
         notes: body.notes || '',
       },
       include: { vehicle: true },
     })
     return NextResponse.json(part, { status: 201 })
-  } catch {
+  } catch (e) {
+    console.error('Failed to create part:', e)
     return NextResponse.json({ error: 'Failed to create part' }, { status: 500 })
   }
 }
