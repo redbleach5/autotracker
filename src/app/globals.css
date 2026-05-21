@@ -202,24 +202,36 @@ html {
   background: oklch(0.15 0.005 155 / 80%);
 }
 
-/* Bottom sheet dialog */
+/* Bottom sheet dialog — uses separate translate for positioning and animation */
 .bottom-sheet-content {
   position: fixed !important;
   bottom: 0 !important;
-  left: 50% !important;
-  right: auto !important;
+  left: 0 !important;
+  right: 0 !important;
   top: auto !important;
-  transform: translateX(-50%) !important;
   width: 100% !important;
   max-width: 32rem !important;
-  margin: 0 !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
   border-radius: 20px 20px 0 0 !important;
   max-height: 92vh !important;
-  animation: slideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) !important;
   overflow-y: auto !important;
+  /* Use Radix data-state for animation instead of keyframes */
+  transform: none !important;
+  translate: none !important;
 }
 
-@keyframes slideUp {
+/* Open animation */
+.bottom-sheet-content[data-state="open"] {
+  animation: bottomSheetIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+/* Close animation */
+.bottom-sheet-content[data-state="closed"] {
+  animation: bottomSheetOut 0.2s ease-in !important;
+}
+
+@keyframes bottomSheetIn {
   from {
     transform: translateY(100%);
   }
@@ -228,11 +240,21 @@ html {
   }
 }
 
-.bottom-sheet-overlay {
-  animation: fadeIn 0.2s ease !important;
+@keyframes bottomSheetOut {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
 }
 
-@keyframes fadeIn {
+/* Overlay fade */
+.bottom-sheet-overlay {
+  animation: overlayIn 0.2s ease !important;
+}
+
+@keyframes overlayIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }

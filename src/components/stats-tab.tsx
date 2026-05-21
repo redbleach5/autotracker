@@ -273,7 +273,7 @@ export function StatsTab() {
                       <Tooltip content={<PieTooltip />} />
                       <Legend
                         verticalAlign="bottom"
-                        height={36}
+                        height={48}
                         formatter={(value: string) => (
                           <span className="text-xs font-medium">{value}</span>
                         )}

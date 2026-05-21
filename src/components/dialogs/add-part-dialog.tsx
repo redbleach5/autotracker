@@ -203,16 +203,17 @@ export function AddPartDialog() {
                 className="h-10"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="partSupplier" className="text-xs font-medium">Поставщик</Label>
-              <Input
-                id="partSupplier"
-                placeholder="Магазин"
-                value={form.supplier}
-                onChange={(e) => setForm({ ...form, supplier: e.target.value })}
-                className="h-10"
-              />
-            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="partSupplier" className="text-xs font-medium">Поставщик</Label>
+            <Input
+              id="partSupplier"
+              placeholder="Магазин"
+              value={form.supplier}
+              onChange={(e) => setForm({ ...form, supplier: e.target.value })}
+              className="h-10"
+            />
           </div>
 
           <div className="space-y-2">

@@ -97,11 +97,13 @@ export const useAppStore = create<AppState>()(
       setEditPartId: (id) => set({ editPartId: id, addPartOpen: !!id }),
 
       // Update actions
-      setUpdateAvailable: (available, info) => set({
+      setUpdateAvailable: (available, info) => set((state) => ({
         updateAvailable: available,
         updateInfo: info ?? null,
-        updateDismissed: false,
-      }),
+        // Не сбрасываем updateDismissed если обновление уже было доступно
+        // (пользователь уже отклонил — не показываем снова)
+        updateDismissed: available ? (state.updateAvailable ? state.updateDismissed : false) : true,
+      })),
       dismissUpdate: () => set({ updateDismissed: true, updateDialogOpen: false }),
       setLastUpdateCheck: (date) => set({ lastUpdateCheck: date }),
       setUpdateDialogOpen: (open) => set({ updateDialogOpen: open }),

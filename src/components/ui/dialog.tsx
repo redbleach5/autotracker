@@ -56,7 +56,7 @@ function DialogContent({
 }) {
   return (
     <DialogPortal data-slot="dialog-portal">
-      <DialogOverlay />
+      <DialogOverlay className={cn(className?.includes('bottom-sheet') ? 'bottom-sheet-overlay' : '')} />
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(

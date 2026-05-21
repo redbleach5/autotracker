@@ -152,7 +152,7 @@ export function DashboardTab() {
                 <Image src="/logo-icon.png" alt="AutoTracker" width={28} height={28} className="rounded-lg" />
               </div>
             </div>
-            <div className="flex gap-2 mt-4">
+            <div className="flex flex-wrap gap-2 mt-4">
               <Button
                 size="sm"
                 className="bg-white/20 hover:bg-white/30 text-white border-0 h-8 text-xs backdrop-blur-sm"

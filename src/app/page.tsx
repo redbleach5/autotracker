@@ -71,7 +71,7 @@ function ThemeToggle() {
 }
 
 function HeaderActions() {
-  const { updateAvailable, updateInfo, setUpdateDialogOpen, performCheck } = useUpdateChecker()
+  const { updateAvailable, updateInfo, setUpdateDialogOpen, performCheck } = useUpdateChecker()  // only instance
 
   return (
     <div className="flex items-center gap-0.5">
@@ -135,9 +135,6 @@ export default function Home() {
     seedDemoData()
   }, [])
 
-  // Initialize update checker
-  useUpdateChecker()
-
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="sticky top-0 z-50 glass border-b safe-area-top">
@@ -164,7 +161,7 @@ export default function Home() {
       {/* Update banner */}
       <UpdateBanner />
 
-      <main className="flex-1 overflow-y-auto pb-20">
+      <main className="flex-1 overflow-y-auto pb-24">
         <div className="max-w-lg mx-auto">
           <div key={activeTab} className="tab-content">
             {activeTab === 'dashboard' && <DashboardTab />}

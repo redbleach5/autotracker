@@ -11,6 +11,7 @@ import { checkForUpdate, shouldCheckForUpdate } from '@/lib/update-service'
  * - Повторяет проверку каждые 4 часа
  * - Показывает уведомление при наличии обновления
  * - Критические обновления показывают диалог сразу
+ * - Не повторяет проверку если пользователь отклонил баннер
  */
 export function useUpdateChecker() {
   const {
@@ -24,18 +25,29 @@ export function useUpdateChecker() {
   } = useAppStore()
 
   const isChecking = useRef(false)
+  // Используем ref для значений, которые не должны триггерить пересоздание performCheck
+  const updateDismissedRef = useRef(updateDismissed)
+  const updateAvailableRef = useRef(updateAvailable)
+  const lastUpdateCheckRef = useRef(lastUpdateCheck)
+  const downloadStateRef = useRef(downloadState)
+
+  // Обновляем refs при каждом рендере
+  updateDismissedRef.current = updateDismissed
+  updateAvailableRef.current = updateAvailable
+  lastUpdateCheckRef.current = lastUpdateCheck
+  downloadStateRef.current = downloadState
 
   const performCheck = useCallback(async (force = false) => {
     if (isChecking.current) return
 
     // Не проверяем, если сейчас скачивается или устанавливается обновление
-    if (downloadState === 'downloading' || downloadState === 'installing') return
+    if (downloadStateRef.current === 'downloading' || downloadStateRef.current === 'installing') return
 
     // Если обновление уже доступно и не отклонено — не проверяем повторно
-    if (updateAvailable && !updateDismissed && !force) return
+    if (updateAvailableRef.current && !updateDismissedRef.current && !force) return
 
     // Проверяем, нужно ли проверять (не чаще раз в 4 часа)
-    if (!force && !shouldCheckForUpdate(lastUpdateCheck)) return
+    if (!force && !shouldCheckForUpdate(lastUpdateCheckRef.current)) return
 
     isChecking.current = true
 
@@ -58,7 +70,7 @@ export function useUpdateChecker() {
     } finally {
       isChecking.current = false
     }
-  }, [updateAvailable, updateDismissed, lastUpdateCheck, downloadState, setUpdateAvailable, setLastUpdateCheck, setUpdateDialogOpen])
+  }, [setUpdateAvailable, setLastUpdateCheck, setUpdateDialogOpen])
 
   // Проверка при монтировании
   useEffect(() => {
