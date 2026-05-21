@@ -1,11 +1,13 @@
 /**
- * AutoTracker — Update Service
+ * AutoTracker — Update Service v2
  *
- * Полноценная система обновлений:
+ * Система обновлений:
  * - Проверка через GitHub Releases API
- * - Скачивание APK прямо в приложении с прогресс-баром
- * - Автоматическая установка через нативный Capacitor плагин
- * - Fallback на открытие браузера для PWA/веб-версии
+ * - Скачивание APK в приложении с прогресс-баром
+ * - Установка через нативный Capacitor плагин (кнопка «Установить»)
+ * - Fallback: открытие браузера для PWA/веб-версии
+ *
+ * Поток: Проверка → Скачивание → Кнопка «Установить» → Системный установщик
  */
 
 export interface AppVersion {
@@ -42,14 +44,14 @@ export interface DownloadProgress {
   bytesLoaded: number
   bytesTotal: number
   percent: number
-  speed: string // e.g., "2.3 МБ/с"
+  speed: string
   error?: string
 }
 
-// Текущая версия приложения
+// Текущая версия приложения (должна совпадать с тегом релиза на GitHub)
 export const CURRENT_VERSION: AppVersion = {
-  version: '1.1.0',
-  buildNumber: 2,
+  version: '1.0.0',
+  buildNumber: 1,
   releaseChannel: 'stable',
 }
 
@@ -57,9 +59,11 @@ const GITHUB_REPO = 'redbleach5/autotracker'
 const GITHUB_API = `https://api.github.com/repos/${GITHUB_REPO}/releases`
 const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000 // 4 часа
 
+// Храним путь к скачанному APK (для повторной установки без повторного скачивания)
+let cachedApkPath: string | null = null
+
 /**
  * Сравнивает две semver версии.
- * Возвращает: 1 если a > b, -1 если a < b, 0 если равны
  */
 export function compareVersions(a: string, b: string): number {
   const parseVersion = (v: string) => {
@@ -79,9 +83,6 @@ export function compareVersions(a: string, b: string): number {
   return 0
 }
 
-/**
- * Парсит changelog из тела GitHub Release
- */
 function parseChangelog(body: string): string[] {
   if (!body) return []
   return body
@@ -93,27 +94,18 @@ function parseChangelog(body: string): string[] {
     .slice(0, 15)
 }
 
-/**
- * Определяет размер APK в человекочитаемом формате
- */
 function formatFileSize(bytes: number): string {
   if (bytes >= 1_000_000) return `${(bytes / 1_000_000).toFixed(1)} МБ`
   if (bytes >= 1_000) return `${(bytes / 1_000).toFixed(0)} КБ`
   return `${bytes} Б`
 }
 
-/**
- * Форматирует скорость скачивания
- */
 function formatSpeed(bytesPerSec: number): string {
   if (bytesPerSec >= 1_000_000) return `${(bytesPerSec / 1_000_000).toFixed(1)} МБ/с`
   if (bytesPerSec >= 1_000) return `${(bytesPerSec / 1_000).toFixed(0)} КБ/с`
-  return `${bytesPerSec} Б/с`
+  return `${Math.round(bytesPerSec)} Б/с`
 }
 
-/**
- * Проверяет, нужно ли выполнять проверку обновлений
- */
 export function shouldCheckForUpdate(lastCheckedAt: string | null): boolean {
   if (!lastCheckedAt) return true
   const lastChecked = new Date(lastCheckedAt).getTime()
@@ -126,7 +118,8 @@ export function shouldCheckForUpdate(lastCheckedAt: string | null): boolean {
  */
 export function isNativePlatform(): boolean {
   if (typeof window === 'undefined') return false
-  return !!(window as any).Capacitor?.isNativePlatform?.()
+  const cap = (window as any).Capacitor
+  return !!(cap && cap.isNativePlatform && cap.isNativePlatform())
 }
 
 /**
@@ -144,18 +137,13 @@ export async function checkForUpdate(): Promise<UpdateCheckResult> {
     })
 
     if (!response.ok) {
-      throw new Error(`GitHub API вернул ${response.status}`)
+      throw new Error(`GitHub API: ${response.status}`)
     }
 
     const releases: any[] = await response.json()
 
     if (!releases || releases.length === 0) {
-      return {
-        hasUpdate: false,
-        current: CURRENT_VERSION.version,
-        latest: CURRENT_VERSION.version,
-        checkedAt,
-      }
+      return { hasUpdate: false, current: CURRENT_VERSION.version, latest: CURRENT_VERSION.version, checkedAt }
     }
 
     const latestRelease = releases.find((r: any) => !r.prerelease) || releases[0]
@@ -168,12 +156,7 @@ export async function checkForUpdate(): Promise<UpdateCheckResult> {
     const hasUpdate = compareVersions(latestVersion, CURRENT_VERSION.version) > 0
 
     if (!hasUpdate) {
-      return {
-        hasUpdate: false,
-        current: CURRENT_VERSION.version,
-        latest: latestVersion,
-        checkedAt,
-      }
+      return { hasUpdate: false, current: CURRENT_VERSION.version, latest: latestVersion, checkedAt }
     }
 
     const currentMajor = parseInt(CURRENT_VERSION.version.split('.')[0])
@@ -192,13 +175,7 @@ export async function checkForUpdate(): Promise<UpdateCheckResult> {
       isCritical,
     }
 
-    return {
-      hasUpdate: true,
-      current: CURRENT_VERSION.version,
-      latest: latestVersion,
-      release,
-      checkedAt,
-    }
+    return { hasUpdate: true, current: CURRENT_VERSION.version, latest: latestVersion, release, checkedAt }
   } catch (error) {
     console.error('Ошибка проверки обновлений:', error)
     return {
@@ -212,10 +189,101 @@ export async function checkForUpdate(): Promise<UpdateCheckResult> {
 }
 
 /**
- * Скачивание APK с прогрессом через XMLHttpRequest.
- * Работает и в нативном, и в веб-режиме (для веба — сохраняет в Downloads).
+ * Скачивание APK с прогрессом через fetch + ReadableStream.
+ * В нативном режиме — сохраняет в кэш через Capacitor Filesystem.
+ * В веб-режиме — скачивает файл через браузер.
+ *
+ * Возвращает путь к файлу (нативный) или 'browser_download' (веб).
  */
-export function downloadApkWithProgress(
+export async function downloadApk(
+  url: string,
+  onProgress: (progress: DownloadProgress) => void,
+): Promise<string> {
+  onProgress({
+    state: 'downloading',
+    bytesLoaded: 0,
+    bytesTotal: 0,
+    percent: 0,
+    speed: '',
+  })
+
+  try {
+    const response = await fetch(url)
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
+    }
+
+    const contentLength = parseInt(response.headers.get('content-length') || '0')
+    const startTime = Date.now()
+
+    if (!response.body) {
+      // Fallback: нет ReadableStream (старые браузеры) — используем XHR
+      return await downloadViaXhr(url, onProgress)
+    }
+
+    // Читаем поток с прогрессом
+    const reader = response.body.getReader()
+    const chunks: Uint8Array[] = []
+    let bytesLoaded = 0
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      chunks.push(value)
+      bytesLoaded += value.length
+
+      const elapsed = (Date.now() - startTime) / 1000
+      const speed = elapsed > 0 ? bytesLoaded / elapsed : 0
+
+      onProgress({
+        state: 'downloading',
+        bytesLoaded,
+        bytesTotal: contentLength,
+        percent: contentLength > 0 ? Math.round((bytesLoaded / contentLength) * 100) : 0,
+        speed: formatSpeed(speed),
+      })
+    }
+
+    // Собираем Blob из чанков
+    const blob = new Blob(chunks, { type: 'application/vnd.android.package-archive' })
+
+    onProgress({
+      state: 'downloaded',
+      bytesLoaded: blob.size,
+      bytesTotal: blob.size,
+      percent: 100,
+      speed: '',
+    })
+
+    // Сохраняем файл
+    if (isNativePlatform()) {
+      const filePath = await saveApkToCache(blob)
+      cachedApkPath = filePath
+      return filePath
+    } else {
+      // Веб-режим: скачиваем через браузер
+      triggerBrowserDownload(blob)
+      return 'browser_download'
+    }
+  } catch (error) {
+    onProgress({
+      state: 'error',
+      bytesLoaded: 0,
+      bytesTotal: 0,
+      percent: 0,
+      speed: '',
+      error: error instanceof Error ? error.message : 'Ошибка скачивания',
+    })
+    throw error
+  }
+}
+
+/**
+ * Fallback скачивание через XHR (для старых WebView без ReadableStream)
+ */
+function downloadViaXhr(
   url: string,
   onProgress: (progress: DownloadProgress) => void,
 ): Promise<string> {
@@ -228,7 +296,7 @@ export function downloadApkWithProgress(
 
     xhr.addEventListener('progress', (event) => {
       if (event.lengthComputable) {
-        const elapsed = (Date.now() - startTime) / 1000 // секунды
+        const elapsed = (Date.now() - startTime) / 1000
         const speed = elapsed > 0 ? event.loaded / elapsed : 0
 
         onProgress({
@@ -253,92 +321,54 @@ export function downloadApkWithProgress(
           speed: '',
         })
 
-        try {
-          // Если Capacitor — сохраняем в кэш приложения и устанавливаем
-          if (isNativePlatform()) {
+        if (isNativePlatform()) {
+          try {
             const filePath = await saveApkToCache(blob)
+            cachedApkPath = filePath
             resolve(filePath)
-          } else {
-            // Для веб/PWA — запускаем обычное скачивание через браузер
-            const downloadUrl = URL.createObjectURL(blob)
-            const a = document.createElement('a')
-            a.href = downloadUrl
-            a.download = 'AutoTracker.apk'
-            document.body.appendChild(a)
-            a.click()
-            document.body.removeChild(a)
-            URL.revokeObjectURL(downloadUrl)
-            resolve('browser_download')
+          } catch (error) {
+            reject(error)
           }
-        } catch (error) {
-          onProgress({
-            state: 'error',
-            bytesLoaded: 0,
-            bytesTotal: 0,
-            percent: 0,
-            speed: '',
-            error: error instanceof Error ? error.message : 'Ошибка сохранения файла',
-          })
-          reject(error)
+        } else {
+          triggerBrowserDownload(blob)
+          resolve('browser_download')
         }
       } else {
-        const error = `HTTP ${xhr.status}`
-        onProgress({
-          state: 'error',
-          bytesLoaded: 0,
-          bytesTotal: 0,
-          percent: 0,
-          speed: '',
-          error,
-        })
-        reject(new Error(error))
+        reject(new Error(`HTTP ${xhr.status}`))
       }
     })
 
-    xhr.addEventListener('error', () => {
-      onProgress({
-        state: 'error',
-        bytesLoaded: 0,
-        bytesTotal: 0,
-        percent: 0,
-        speed: '',
-        error: 'Ошибка сети при скачивании',
-      })
-      reject(new Error('Ошибка сети'))
-    })
-
-    xhr.addEventListener('abort', () => {
-      onProgress({
-        state: 'error',
-        bytesLoaded: 0,
-        bytesTotal: 0,
-        percent: 0,
-        speed: '',
-        error: 'Скачивание отменено',
-      })
-      reject(new Error('Отменено'))
-    })
+    xhr.addEventListener('error', () => reject(new Error('Ошибка сети')))
+    xhr.addEventListener('abort', () => reject(new Error('Отменено')))
 
     xhr.send()
   })
 }
 
 /**
- * Сохраняет APK blob в кэш приложения через Capacitor Filesystem API.
- * Возвращает полный путь к файлу для нативной установки.
+ * Скачивание файла через браузер (создаёт ссылку и кликает по ней)
+ */
+function triggerBrowserDownload(blob: Blob) {
+  const downloadUrl = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = downloadUrl
+  a.download = 'AutoTracker.apk'
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000)
+}
+
+/**
+ * Сохраняет APK в кэш приложения через Capacitor Filesystem.
+ * Использует динамический импорт для совместимости с SSR.
  */
 async function saveApkToCache(blob: Blob): Promise<string> {
-  const Capacitor = (window as any).Capacitor
-  if (!Capacitor?.Filesystem) {
-    throw new Error('Capacitor Filesystem plugin not available')
-  }
+  // Динамический импорт — не ломает SSR
+  const { Filesystem, Directory } = await import('@capacitor/filesystem')
 
-  const { Filesystem, Directory } = Capacitor.Filesystem
-
-  // Конвертируем Blob в base64
   const base64 = await blobToBase64(blob)
 
-  // Записываем в директорию кэша приложения
   const result = await Filesystem.writeFile({
     path: 'updates/AutoTracker.apk',
     data: base64,
@@ -346,17 +376,18 @@ async function saveApkToCache(blob: Blob): Promise<string> {
     recursive: true,
   })
 
-  return result.uri || result.path || ''
+  return result.uri || ''
 }
 
 /**
- * Конвертирует Blob в base64 строку
+ * Конвертирует Blob в base64
  */
 function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onloadend = () => {
-      const base64 = (reader.result as string).split(',')[1]
+      const result = reader.result as string
+      const base64 = result.split(',')[1]
       resolve(base64)
     }
     reader.onerror = reject
@@ -366,82 +397,54 @@ function blobToBase64(blob: Blob): Promise<string> {
 
 /**
  * Устанавливает APK через нативный Capacitor плагин.
- * В нативном режиме вызывает ApkInstaller.installApk().
+ * Вызывается ПОСЛЕ скачивания, по нажатию кнопки «Установить».
  */
-export async function installApk(filePath: string): Promise<boolean> {
+export async function installApk(filePath?: string): Promise<boolean> {
+  const path = filePath || cachedApkPath
+
+  // В веб-режиме — открываем страницу релизов
   if (!isNativePlatform()) {
-    // В веб-режиме просто открываем страницу релизов
     window.open(`https://github.com/${GITHUB_REPO}/releases/latest`, '_blank', 'noopener,noreferrer')
     return true
   }
 
-  const Capacitor = (window as any).Capacitor
-  if (!Capacitor?.ApkInstaller) {
-    throw new Error('ApkInstaller plugin not available')
+  if (!path) {
+    throw new Error('APK файл не найден. Скачайте обновление повторно.')
   }
 
+  // Динамический импорт Capacitor core
+  const { registerPlugin } = await import('@capacitor/core')
+
+  const ApkInstaller = registerPlugin<{
+    canRequestInstall(): Promise<{ canRequest: boolean }>
+    requestInstallPermission(): Promise<{ granted: boolean }>
+    installApk(options: { filePath: string }): Promise<{ success: boolean }>
+  }>('ApkInstaller')
+
+  // Проверяем разрешение на установку (Android 8+)
   try {
-    // Сначала проверяем, есть ли разрешение на установку
-    const canRequest = await Capacitor.ApkInstaller.canRequestInstall()
+    const { canRequest } = await ApkInstaller.canRequestInstall()
 
-    if (!canRequest.canRequest) {
-      // Запрашиваем разрешение
-      const permissionResult = await Capacitor.ApkInstaller.requestInstallPermission()
-
-      if (!permissionResult.granted) {
+    if (!canRequest) {
+      const { granted } = await ApkInstaller.requestInstallPermission()
+      if (!granted) {
         throw new Error('INSTALL_PERMISSION_REQUIRED')
       }
     }
-
-    // Устанавливаем APK
-    const result = await Capacitor.ApkInstaller.installApk({ filePath })
-    return result.success === true
   } catch (error: any) {
-    // Если ошибка — разрешение на установку, пробуем фоллбэк
-    if (error?.message === 'INSTALL_PERMISSION_REQUIRED' || error?.includes?.('INSTALL_PERMISSION_REQUIRED')) {
-      // Пробуем ещё раз запросить разрешение
-      try {
-        const permissionResult = await Capacitor.ApkInstaller.requestInstallPermission()
-        if (permissionResult.granted) {
-          const result = await Capacitor.ApkInstaller.installApk({ filePath })
-          return result.success === true
-        }
-      } catch {}
-      throw new Error('INSTALL_PERMISSION_REQUIRED')
+    if (error?.message === 'INSTALL_PERMISSION_REQUIRED') {
+      throw error
     }
-    throw error
+    // Если canRequestInstall не работает — пробуем установить напрямую
   }
+
+  // Запускаем установку
+  const result = await ApkInstaller.installApk({ filePath: path })
+  return result.success === true
 }
 
 /**
- * Полный цикл обновления: скачать → установить
- */
-export async function downloadAndInstall(
-  downloadUrl: string,
-  onProgress: (progress: DownloadProgress) => void,
-): Promise<boolean> {
-  // Шаг 1: Скачиваем APK
-  const filePath = await downloadApkWithProgress(downloadUrl, onProgress)
-
-  // В веб-режиме файл уже скачался через браузер
-  if (filePath === 'browser_download') {
-    return true
-  }
-
-  // Шаг 2: Устанавливаем APK (нативный режим)
-  onProgress({
-    state: 'installing',
-    bytesLoaded: 0,
-    bytesTotal: 0,
-    percent: 100,
-    speed: '',
-  })
-
-  return await installApk(filePath)
-}
-
-/**
- * Получает URL для скачивания APK
+ * Получить URL для скачивания APK
  */
 export function getDownloadUrl(release: ReleaseInfo): string {
   return release.downloadUrl || `https://github.com/${GITHUB_REPO}/releases/latest`
@@ -459,8 +462,22 @@ export function formatReleaseDate(dateStr: string): string {
 }
 
 /**
- * Форматирует размер скачивания
+ * Форматирует размер файла
  */
 export function formatBytes(bytes: number): string {
   return formatFileSize(bytes)
+}
+
+/**
+ * Получить закэшированный путь к APK (для повторной установки)
+ */
+export function getCachedApkPath(): string | null {
+  return cachedApkPath
+}
+
+/**
+ * Очистить кэш APK
+ */
+export function clearApkCache(): void {
+  cachedApkPath = null
 }

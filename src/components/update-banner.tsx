@@ -3,10 +3,9 @@
 import { useAppStore } from '@/components/app-store'
 import { Download, X, AlertTriangle, Loader2, CheckCircle2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { formatBytes } from '@/lib/update-service'
 
 /**
- * Компактный баннер обновления с прогресс-баром скачивания.
+ * Баннер обновления с мини-прогресс-баром скачивания.
  */
 export function UpdateBanner() {
   const { updateAvailable, updateDismissed, updateInfo, downloadState, downloadProgress, setUpdateDialogOpen, dismissUpdate } = useAppStore()
@@ -66,7 +65,10 @@ export function UpdateBanner() {
                 ) : isInstalling ? (
                   <p className="text-sm font-semibold">Установка обновления...</p>
                 ) : isDownloaded ? (
-                  <p className="text-sm font-semibold">Готово к установке — v{updateInfo.version}</p>
+                  <div>
+                    <p className="text-sm font-semibold">Готово к установке — v{updateInfo.version}</p>
+                    <p className="text-[11px] opacity-80">Нажмите для установки</p>
+                  </div>
                 ) : (
                   <>
                     <p className="text-sm font-semibold">

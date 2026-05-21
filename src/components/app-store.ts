@@ -29,7 +29,6 @@ interface AppState {
   // Download state
   downloadProgress: DownloadProgress | null
   downloadState: DownloadState
-  downloadedFilePath: string | null
 
   // Actions
   setActiveTab: (tab: TabId) => void
@@ -53,7 +52,6 @@ interface AppState {
   // Download actions
   setDownloadProgress: (progress: DownloadProgress | null) => void
   setDownloadState: (state: DownloadState) => void
-  setDownloadedFilePath: (path: string | null) => void
   resetDownloadState: () => void
 }
 
@@ -84,7 +82,6 @@ export const useAppStore = create<AppState>()(
       // Download state
       downloadProgress: null,
       downloadState: 'idle' as DownloadState,
-      downloadedFilePath: null,
 
       // Actions
       setActiveTab: (tab) => set({ activeTab: tab }),
@@ -103,7 +100,7 @@ export const useAppStore = create<AppState>()(
       setUpdateAvailable: (available, info) => set({
         updateAvailable: available,
         updateInfo: info ?? null,
-        updateDismissed: available ? false : true,
+        updateDismissed: false,
       }),
       dismissUpdate: () => set({ updateDismissed: true, updateDialogOpen: false }),
       setLastUpdateCheck: (date) => set({ lastUpdateCheck: date }),
@@ -112,11 +109,9 @@ export const useAppStore = create<AppState>()(
       // Download actions
       setDownloadProgress: (progress) => set({ downloadProgress: progress }),
       setDownloadState: (state) => set({ downloadState: state }),
-      setDownloadedFilePath: (path) => set({ downloadedFilePath: path }),
       resetDownloadState: () => set({
         downloadProgress: null,
         downloadState: 'idle' as DownloadState,
-        downloadedFilePath: null,
       }),
     }),
     {
