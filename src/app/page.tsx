@@ -98,7 +98,7 @@ function HeaderActions() {
             <Info className="h-4 w-4 text-muted-foreground" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-52">
+        <DropdownMenuContent align="end" className="w-52" collisionPadding={8}>
           <DropdownMenuItem className="text-xs text-muted-foreground cursor-default">
             AutoTracker v{CURRENT_VERSION.version}
           </DropdownMenuItem>

@@ -160,7 +160,7 @@ export function AddMaintenanceDialog() {
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose() }}>
       <DialogContent className="bottom-sheet-content max-w-md">
         <div className="bottom-sheet-handle" />
-        <DialogHeader className="pb-2">
+        <DialogHeader className="pb-2 px-4 pt-3 shrink-0">
           <DialogTitle className="flex items-center gap-2.5">
             {isSchedule ? (
               <>
@@ -181,7 +181,7 @@ export function AddMaintenanceDialog() {
         </DialogHeader>
 
         {isSchedule ? (
-          <form onSubmit={handleScheduleSubmit} className="space-y-4 px-1">
+          <form onSubmit={handleScheduleSubmit} className="bottom-sheet-scroll space-y-4 px-4 pb-4">
             <div className="space-y-2">
               <Label className="text-xs font-medium">Транспорт *</Label>
               <Select
@@ -268,7 +268,7 @@ export function AddMaintenanceDialog() {
             </div>
           </form>
         ) : (
-          <form onSubmit={handleRecordSubmit} className="space-y-4 px-1">
+          <form onSubmit={handleRecordSubmit} className="bottom-sheet-scroll space-y-4 px-4 pb-4">
             <div className="space-y-2">
               <Label className="text-xs font-medium">Транспорт *</Label>
               <Select

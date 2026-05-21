@@ -214,11 +214,22 @@ html {
   margin-left: auto !important;
   margin-right: auto !important;
   border-radius: 20px 20px 0 0 !important;
-  max-height: 92vh !important;
-  overflow-y: auto !important;
+  max-height: 85vh !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
   /* Use Radix data-state for animation instead of keyframes */
   transform: none !important;
   translate: none !important;
+}
+
+/* Scrollable area inside bottom sheet */
+.bottom-sheet-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 4px;
 }
 
 /* Open animation */

@@ -96,7 +96,7 @@ export function AddExpenseDialog() {
     <Dialog open={addExpenseOpen} onOpenChange={(open) => { if (!open) handleClose() }}>
       <DialogContent className="bottom-sheet-content max-w-md">
         <div className="bottom-sheet-handle" />
-        <DialogHeader className="pb-2">
+        <DialogHeader className="pb-2 px-4 pt-3 shrink-0">
           <DialogTitle className="flex items-center gap-2.5">
             <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/50">
               <Receipt className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
@@ -104,7 +104,7 @@ export function AddExpenseDialog() {
             Добавить расход
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 px-1">
+        <form onSubmit={handleSubmit} className="bottom-sheet-scroll space-y-4 px-4 pb-4">
           <div className="space-y-2">
             <Label className="text-xs font-medium">Транспорт *</Label>
             <Select
