@@ -60,3 +60,12 @@ agent-ctx/
 # Uploads
 upload/
 jdk21.tar.gz
+# JDK and Android SDK — too large for git
+jdk-17.0.12/
+jdk-21.0.6/
+jdk17.tar.gz
+jdk21.tar.gz
+android-sdk/
+*.tar.gz
+AutoTracker.apk
+skills/ppt/scripts/tectonic
