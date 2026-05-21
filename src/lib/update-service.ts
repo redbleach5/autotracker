@@ -50,8 +50,8 @@ export interface DownloadProgress {
 
 // Текущая версия приложения (должна совпадать с тегом релиза на GitHub)
 export const CURRENT_VERSION: AppVersion = {
-  version: '1.0.0',
-  buildNumber: 1,
+  version: '1.1.1',
+  buildNumber: 3,
   releaseChannel: 'stable',
 }
 
